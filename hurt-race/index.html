@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hurt vs Hurts Race!</title>
+    <style>
+        :root {
+            --p1-color: #ff85a1;
+            --p2-color: #4cc9f0;
+        }
+        body {
+            font-family: 'Arial Rounded MT Bold', sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #2b2d42;
+            color: white;
+            overflow: hidden;
+        }
+        #timer-bar {
+            height: 50px;
+            background: #8d99ae;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            border-bottom: 4px solid #edf2f4;
+        }
+        #game-split {
+            display: flex;
+            flex: 1;
+        }
+        .player-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: 0.3s;
+        }
+        #p1 { border-right: 4px solid white; background: #590d22; }
+        #p2 { background: #023e8a; }
+
+        .question-box {
+            font-size: 28px;
+            margin-bottom: 30px;
+            text-align: center;
+            min-height: 80px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 20px;
+        }
+        button {
+            padding: 20px 40px;
+            font-size: 22px;
+            cursor: pointer;
+            border: none;
+            border-radius: 15px;
+            font-weight: bold;
+            transition: 0.1s;
+        }
+        #p1 button { background: var(--p1-color); color: white; }
+        #p2 button { background: var(--p2-color); color: white; }
+        button:active { transform: scale(0.9); }
+
+        .score { font-size: 18px; margin-top: 20px; }
+        .hidden { display: none; }
+        #win-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="timer-bar">⏳ TIME: <span id="clock">60</span>s</div>
+
+    <div id="game-split">
+        <div id="p1" class="player-side">
+            <h2>Player 1 (Left)</h2>
+            <div class="question-box" id="q1">Ready?</div>
+            <div class="btn-group">
+                <button onclick="checkAnswer(1, 'hurt')">HURT</button>
+                <button onclick="checkAnswer(1, 'hurts')">HURTS</button>
+            </div>
+            <div class="score">Progress: <span id="s1">0</span>/10</div>
+        </div>
+
+        <div id="p2" class="player-side">
+            <h2>Player 2 (Right)</h2>
+            <div class="question-box" id="q2">Ready?</div>
+            <div class="btn-group">
+                <button onclick="checkAnswer(2, 'hurt')">HURT</button>
+                <button onclick="checkAnswer(2, 'hurts')">HURTS</button>
+            </div>
+            <div class="score">Progress: <span id="s2">0</span>/10</div>
+        </div>
+    </div>
+
+    <div id="win-overlay" class="hidden">
+        <h1 id="winner-text">GAME OVER</h1>
+        <button onclick="location.reload()" style="background: white; color: black;">Play Again 🔄</button>
+    </div>
+
+<script>
+    const quizData = [
+        { q: "My leg ____.", a: "hurts" },
+        { q: "My arms ____.", a: "hurt" },
+        { q: "His back ____.", a: "hurts" },
+        { q: "Their eyes ____.", a: "hurt" },
+        { q: "My finger ____.", a: "hurts" },
+        { q: "Her feet ____.", a: "hurt" },
+        { q: "The boy's knee ____.", a: "hurts" },
+        { q: "My teeth ____.", a: "hurt" },
+        { q: "This tooth ____.", a: "hurts" },
+        { q: "Your ears ____.", a: "hurt" }
+    ];
+
+    let p1Score = 0;
+    let p2Score = 0;
+    let timeLeft = 60;
+    let gameActive = true;
+
+    // Audio Context for Sound Effects
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(freq, type) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function startTimer() {
+        const timer = setInterval(() => {
+            if (!gameActive) { clearInterval(timer); return; }
+            timeLeft--;
+            document.getElementById('clock').innerText = timeLeft;
+            if (timeLeft <= 0) { 
+                clearInterval(timer);
+                endGame("TIME'S UP! IT'S A TIE!");
+            }
+        }, 1000);
+    }
+
+    function showQuestion(playerNum) {
+        const score = playerNum === 1 ? p1Score : p2Score;
+        if (score < quizData.length) {
+            document.getElementById('q' + playerNum).innerText = quizData[score].q;
+        } else {
+            endGame("PLAYER " + playerNum + " WINS! 🎉");
+        }
+    }
+
+    function checkAnswer(playerNum, choice) {
+        if (!gameActive) return;
+        const score = playerNum === 1 ? p1Score : p2Score;
+        
+        if (choice === quizData[score].a) {
+            playSound(800, 'sine'); // Correct beep
+            if (playerNum === 1) { p1Score++; document.getElementById('s1').innerText = p1Score; }
+            else { p2Score++; document.getElementById('s2').innerText = p2Score; }
+            showQuestion(playerNum);
+        } else {
+            playSound(200, 'square'); // Wrong buzz
+            // Small penalty: blink red
+            const side = document.getElementById('p' + playerNum);
+            side.style.background = '#ff0000';
+            setTimeout(() => {
+                side.style.background = playerNum === 1 ? '#590d22' : '#023e8a';
+            }, 200);
+        }
+    }
+
+    function endGame(msg) {
+        gameActive = false;
+        document.getElementById('win-overlay').classList.remove('hidden');
+        document.getElementById('winner-text').innerText = msg;
+    }
+
+    // Start everything
+    startTimer();
+    showQuestion(1);
+    showQuestion(2);
+</script>
+</body>
+</html>
