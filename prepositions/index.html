@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preposition Playground Escape Room</title>
+    <style>
+        :root {
+            --primary-pink: #ffafcc;
+            --soft-blue: #a2d2ff;
+            --grass-green: #bde0fe;
+            --warm-yellow: #ffecb3;
+            --text-color: #5c5470;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+            background-color: var(--soft-blue);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #game-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 0 10px 0px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            border: 8px solid var(--primary-pink);
+        }
+
+        h1 { color: #ff5c8d; font-size: 24px; }
+        
+        .toy-box {
+            font-size: 50px;
+            margin: 20px 0;
+            background: var(--warm-yellow);
+            padding: 20px;
+            border-radius: 15px;
+            border: 3px dashed #ffb347;
+        }
+
+        .question { font-size: 18px; margin-bottom: 20px; font-weight: bold; }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button {
+            padding: 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 12px;
+            background-color: var(--grass-green);
+            color: #333;
+            transition: transform 0.2s, background 0.2s;
+            font-family: inherit;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background-color: #bde0fe;
+        }
+
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+            height: 20px;
+        }
+
+        .progress {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #888;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="start-screen">
+        <h1>🧸 Preposition Playground</h1>
+        <p>Can you find where all the toys are hiding to escape the room?</p>
+        <button onclick="startGame()">Start Play! 🚀</button>
+    </div>
+
+    <div id="quiz-screen" class="hidden">
+        <div class="toy-box" id="toy-icon">📦</div>
+        <div class="question" id="question-text">Where is the robot?</div>
+        <div class="options" id="options-container"></div>
+        <div id="message"></div>
+        <div class="progress" id="progress-text">Question 1 of 8</div>
+    </div>
+
+    <div id="win-screen" class="hidden">
+        <h1>🎉 TADA! 🎉</h1>
+        <p>You are a Preposition Master! The room is open!</p>
+        <button onclick="location.reload()">Play Again 🔄</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { toy: "🤖", text: "Where is the Robot?", answer: "on the desk", options: ["on the desk", "under the chair", "in the pen"] },
+        { toy: "📦", text: "Where is the Box?", answer: "under the desk", options: ["on the robot", "under the desk", "in the yo-yos"] },
+        { toy: "🪑", text: "Where is the Chair?", answer: "under the robot", options: ["under the robot", "in the box", "on the kite"] },
+        { toy: "🪀", text: "Where are the Yo-yos?", answer: "in the box", options: ["on the desk", "in the box", "under the robot"] },
+        { toy: "🎎", text: "Where are the Dolls?", answer: "on the chair", options: ["under the box", "on the chair", "in the desk"] },
+        { toy: "🖋️", text: "Where is the Pen?", answer: "in the robot", options: ["under the desk", "on the kite", "in the robot"] },
+        { toy: "🪁", text: "Where is the Kite?", answer: "on the desk", options: ["on the desk", "under the chair", "in the box"] },
+        { toy: "🧸", text: "Where is the Teddy?", answer: "under the chair", options: ["on the pen", "under the chair", "in the robot"] }
+    ];
+
+    let currentQuestion = 0;
+
+    function startGame() {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('quiz-screen').classList.remove('hidden');
+        showQuestion();
+    }
+
+    function showQuestion() {
+        const q = questions[currentQuestion];
+        document.getElementById('toy-icon').innerText = q.toy;
+        document.getElementById('question-text').innerText = q.text;
+        document.getElementById('progress-text').innerText = `Challenge ${currentQuestion + 1} of ${questions.length}`;
+        
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+        
+        // Shuffle options
+        const shuffled = [...q.options].sort(() => Math.random() - 0.5);
+        
+        shuffled.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(opt);
+            container.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selected) {
+        const msg = document.getElementById('message');
+        if (selected === questions[currentQuestion].answer) {
+            msg.style.color = "#4CAF50";
+            msg.innerText = "Correct! ✨";
+            setTimeout(() => {
+                currentQuestion++;
+                if (currentQuestion < questions.length) {
+                    msg.innerText = "";
+                    showQuestion();
+                } else {
+                    showWin();
+                }
+            }, 1000);
+        } else {
+            msg.style.color = "#ff5c8d";
+            msg.innerText = "Oops! Try again! 🌸";
+        }
+    }
+
+    function showWin() {
+        document.getElementById('quiz-screen').classList.add('hidden');
+        document.getElementById('win-screen').classList.remove('hidden');
+    }
+</script>
+
+</body>
+</html>
