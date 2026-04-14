@@ -1,206 +1,813 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time Attack Arcade</title>
-    <style>
-        :root { --p1-color: #ff0055; --p2-color: #00ffcc; }
-        body {
-            font-family: 'Courier New', Courier, monospace;
-            margin: 0; background: #000; color: #fff;
-            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
-        }
-        #timer-header {
-            height: 60px; background: #222; border-bottom: 4px solid #444;
-            display: flex; justify-content: center; align-items: center; font-size: 30px; color: #ffeb3b;
-        }
-        #game-split { display: flex; flex: 1; }
-        .player-side {
-            flex: 1; display: flex; flex-direction: column; align-items: center;
-            justify-content: center; position: relative; transition: background 0.2s;
-        }
-        #p1-side { border-right: 2px solid #444; }
-        
-        /* THE CLOCK */
-        .clock {
-            width: 180px; height: 180px; border: 8px solid white;
-            border-radius: 50%; position: relative; background: #eee; margin: 20px;
-        }
-        .hand {
-            position: absolute; bottom: 50%; left: 50%; transform-origin: bottom;
-            background: black; border-radius: 5px; transition: transform 0.3s cubic-bezier(0.4, 2.08, 0.55, 0.44);
-        }
-        .hour-hand { width: 6px; height: 50px; }
-        .min-hand { width: 4px; height: 75px; background: red; }
-        .center-dot {
-            position: absolute; top: 50%; left: 50%; width: 12px; height: 12px;
-            background: black; border-radius: 50%; transform: translate(-50%, -50%);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⏰ TIME ATTACK ARCADE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap');
 
-        .display-time { font-size: 24px; margin: 10px; color: #ffeb3b; }
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        
-        button {
-            padding: 10px; font-weight: bold; cursor: pointer; border: none;
-            border-radius: 5px; background: #444; color: white;
-        }
-        .check-btn { grid-column: span 2; background: #4CAF50; padding: 15px; font-size: 18px; }
+  :root {
+    --p1: #ff2d78;
+    --p2: #00f5d4;
+    --gold: #ffd60a;
+    --bg: #05010f;
+    --panel: #0d0820;
+    --glow1: 0 0 10px #ff2d78, 0 0 30px #ff2d7855;
+    --glow2: 0 0 10px #00f5d4, 0 0 30px #00f5d455;
+    --glowG: 0 0 10px #ffd60a, 0 0 30px #ffd60a55;
+  }
 
-        /* CHARACTER SELECTION */
-        #setup-overlay, #win-overlay {
-            position: fixed; inset: 0; background: #000; z-index: 100;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .char-grid { display: flex; gap: 40px; }
-        .char-box { text-align: center; cursor: pointer; border: 4px solid transparent; padding: 10px; }
-        .char-box:hover { border-color: var(--p1-color); }
-        .avatar { font-size: 80px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .flash-red { background: rgba(255, 0, 0, 0.8) !important; }
-        .hidden { display: none !important; }
-    </style>
+  body {
+    font-family: 'Press Start 2P', monospace;
+    background: var(--bg);
+    color: #fff;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    cursor: none;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px);
+    pointer-events: none; z-index: 9999;
+  }
+
+  /* Custom cursor */
+  #cursor {
+    width: 16px; height: 16px;
+    border: 3px solid var(--gold);
+    position: fixed; pointer-events: none; z-index: 99999;
+    transform: translate(-50%,-50%);
+    box-shadow: var(--glowG);
+    transition: transform 0.05s;
+  }
+
+  /* ─── HEADER ─── */
+  #header {
+    height: 64px;
+    background: linear-gradient(90deg, #1a0030, #0a001a, #1a0030);
+    border-bottom: 3px solid var(--gold);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px;
+    box-shadow: 0 4px 30px rgba(255,214,10,0.2);
+  }
+  #header h1 {
+    font-size: 10px; letter-spacing: 3px;
+    color: var(--gold);
+    text-shadow: var(--glowG);
+    animation: flicker 4s infinite;
+  }
+  #global-timer {
+    font-size: 22px; color: var(--gold);
+    text-shadow: var(--glowG);
+    min-width: 90px; text-align: center;
+  }
+  #global-timer.urgent { color: #ff2d78; text-shadow: var(--glow1); animation: pulse 0.5s infinite; }
+
+  @keyframes flicker {
+    0%,95%,100%{opacity:1} 96%{opacity:0.4} 98%{opacity:0.8}
+  }
+  @keyframes pulse {
+    0%,100%{transform:scale(1)} 50%{transform:scale(1.1)}
+  }
+
+  /* ─── GAME AREA ─── */
+  #game-split {
+    flex: 1; display: flex; overflow: hidden;
+  }
+
+  .player-side {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 16px; gap: 10px; position: relative;
+    transition: background 0.15s;
+  }
+  #p1-side { border-right: 2px solid #2a0050; }
+  #p1-side .neon-line { background: var(--p1); box-shadow: var(--glow1); }
+  #p2-side .neon-line { background: var(--p2); box-shadow: var(--glow2); }
+
+  .neon-line { height: 3px; width: 80%; border-radius: 2px; }
+
+  /* Score badge */
+  .score-badge {
+    font-size: 9px; letter-spacing: 2px;
+    padding: 6px 16px; border-radius: 3px;
+  }
+  #p1-side .score-badge {
+    color: var(--p1); border: 2px solid var(--p1);
+    text-shadow: var(--glow1); box-shadow: var(--glow1);
+  }
+  #p2-side .score-badge {
+    color: var(--p2); border: 2px solid var(--p2);
+    text-shadow: var(--glow2); box-shadow: var(--glow2);
+  }
+
+  /* Avatar */
+  .avatar-display { font-size: 36px; line-height: 1; }
+
+  /* Target time */
+  .target-label { font-size: 7px; color: #888; letter-spacing: 2px; }
+  .target-time {
+    font-size: 20px; color: var(--gold);
+    text-shadow: var(--glowG);
+    letter-spacing: 4px;
+  }
+
+  /* ─── ANALOG CLOCK ─── */
+  .clock-wrap {
+    position: relative; width: 160px; height: 160px;
+  }
+  .clock-face {
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #1e1e3a, #07040f);
+    border: 4px solid #333;
+    position: relative;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+  }
+  #p1-side .clock-face { border-color: var(--p1); box-shadow: 0 0 20px #ff2d7866, inset 0 0 20px rgba(0,0,0,0.8); }
+  #p2-side .clock-face { border-color: var(--p2); box-shadow: 0 0 20px #00f5d466, inset 0 0 20px rgba(0,0,0,0.8); }
+
+  /* Tick marks */
+  .clock-face::before {
+    content: '';
+    position: absolute; inset: 8px;
+    border-radius: 50%;
+    background: repeating-conic-gradient(
+      #ffffff22 0deg 2deg,
+      transparent 2deg 30deg
+    );
+  }
+
+  /* Numbers on clock */
+  .clock-num {
+    position: absolute; font-size: 7px; color: #aaa;
+    transform: translate(-50%, -50%);
+  }
+
+  .hand {
+    position: absolute;
+    bottom: 50%; left: 50%;
+    transform-origin: bottom center;
+    border-radius: 4px 4px 0 0;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .hour-hand {
+    width: 5px; height: 45px;
+    background: #eee;
+    margin-left: -2.5px;
+    box-shadow: 0 0 6px #fff8;
+  }
+  .min-hand {
+    width: 3px; height: 63px;
+    margin-left: -1.5px;
+  }
+  #p1-side .min-hand { background: var(--p1); box-shadow: var(--glow1); }
+  #p2-side .min-hand { background: var(--p2); box-shadow: var(--glow2); }
+
+  .sec-hand {
+    width: 2px; height: 68px;
+    background: var(--gold);
+    margin-left: -1px;
+    box-shadow: var(--glowG);
+    transition: transform 0.1s linear;
+  }
+  .center-dot {
+    position: absolute; top:50%; left:50%;
+    width:12px; height:12px; border-radius:50%;
+    background: var(--gold); box-shadow: var(--glowG);
+    transform: translate(-50%,-50%);
+  }
+
+  /* Digital readout under clock */
+  .digital-readout {
+    font-size: 14px; letter-spacing: 4px;
+    padding: 6px 14px; border-radius: 3px;
+    background: #0a0018;
+  }
+  #p1-side .digital-readout { color: var(--p1); border: 1px solid var(--p1)44; }
+  #p2-side .digital-readout { color: var(--p2); border: 1px solid var(--p2)44; }
+
+  /* ─── BUTTONS ─── */
+  .controls {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; width: 100%; max-width: 260px;
+  }
+  .btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px; padding: 10px 6px;
+    border: 2px solid; border-radius: 3px;
+    cursor: none; background: transparent;
+    transition: all 0.1s; letter-spacing: 1px;
+    position: relative; overflow: hidden;
+  }
+  .btn::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: currentColor;
+    opacity: 0; transition: opacity 0.1s;
+  }
+  .btn:hover::after { opacity: 0.15; }
+  .btn:active { transform: scale(0.95); }
+
+  #p1-side .btn { color: var(--p1); border-color: var(--p1); box-shadow: var(--glow1); }
+  #p2-side .btn { color: var(--p2); border-color: var(--p2); box-shadow: var(--glow2); }
+
+  .btn-check {
+    grid-column: span 2;
+    font-size: 10px; padding: 13px;
+    color: var(--gold) !important;
+    border-color: var(--gold) !important;
+    box-shadow: var(--glowG) !important;
+    animation: btnPulse 2s infinite;
+  }
+  @keyframes btnPulse {
+    0%,100%{box-shadow: 0 0 8px #ffd60a55} 50%{box-shadow: 0 0 20px #ffd60a}
+  }
+
+  /* Progress pips */
+  .pips { display: flex; gap: 6px; }
+  .pip {
+    width: 12px; height: 12px; border-radius: 2px;
+    border: 2px solid #444;
+    transition: all 0.3s;
+  }
+  #p1-side .pip.filled { background: var(--p1); border-color: var(--p1); box-shadow: var(--glow1); }
+  #p2-side .pip.filled { background: var(--p2); border-color: var(--p2); box-shadow: var(--glow2); }
+
+  /* Flash states */
+  .flash-wrong { animation: wrongFlash 0.3s ease; }
+  .flash-right { animation: rightFlash 0.4s ease; }
+  @keyframes wrongFlash {
+    0%,100%{background:transparent} 50%{background:rgba(255,0,0,0.4)}
+  }
+  @keyframes rightFlash {
+    0%,100%{background:transparent} 50%{background:rgba(0,255,150,0.2)}
+  }
+
+  /* ─── OVERLAYS ─── */
+  .overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(5,1,15,0.97);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 24px;
+  }
+  .overlay.hidden { display: none; }
+
+  .overlay h1 {
+    font-size: 16px; color: var(--gold);
+    text-shadow: var(--glowG);
+    text-align: center; line-height: 2;
+    animation: flicker 3s infinite;
+  }
+  .overlay h2 { font-size: 10px; color: #888; letter-spacing: 3px; }
+
+  /* Character select */
+  .char-panels { display: flex; gap: 40px; }
+  .char-panel { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .char-panel h3 { font-size: 9px; letter-spacing: 2px; }
+  #p1-setup h3 { color: var(--p1); text-shadow: var(--glow1); }
+  #p2-setup h3 { color: var(--p2); text-shadow: var(--glow2); }
+
+  .char-choices { display: flex; gap: 16px; }
+  .char-box {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 12px 20px; border: 2px solid #333; border-radius: 4px;
+    cursor: none; transition: all 0.2s; background: #0a0018;
+  }
+  .char-box:hover { border-color: var(--gold); box-shadow: var(--glowG); transform: scale(1.05); }
+  .char-box.selected-p1 { border-color: var(--p1); box-shadow: var(--glow1); }
+  .char-box.selected-p2 { border-color: var(--p2); box-shadow: var(--glow2); }
+  .char-icon { font-size: 52px; }
+  .char-name { font-size: 7px; color: #aaa; letter-spacing: 2px; }
+
+  .divider-v {
+    width: 2px; background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+    align-self: stretch;
+  }
+
+  /* How-to-play */
+  .howto {
+    font-size: 7px; color: #555; letter-spacing: 1px; line-height: 2.5;
+    text-align: center; border: 1px solid #222; padding: 12px 24px; border-radius: 3px;
+  }
+
+  /* Start button */
+  #start-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px; padding: 16px 40px;
+    color: var(--gold); border: 3px solid var(--gold);
+    background: transparent; border-radius: 4px;
+    cursor: none; letter-spacing: 3px;
+    box-shadow: var(--glowG);
+    animation: btnPulse 1.5s infinite;
+    transition: transform 0.1s;
+  }
+  #start-btn:hover { transform: scale(1.05); background: #ffd60a11; }
+  #start-btn:active { transform: scale(0.97); }
+  #start-btn.hidden { display: none; }
+
+  /* Win overlay */
+  #win-overlay .win-char { font-size: 80px; animation: bounce 0.6s infinite alternate; }
+  @keyframes bounce { from{transform:translateY(0)} to{transform:translateY(-16px)} }
+
+  .stars { font-size: 30px; letter-spacing: 10px; }
+
+  #replay-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px; padding: 14px 32px;
+    color: #000; background: var(--gold);
+    border: none; border-radius: 4px; cursor: none;
+    box-shadow: var(--glowG); letter-spacing: 2px;
+    transition: transform 0.1s;
+  }
+  #replay-btn:hover { transform: scale(1.07); }
+
+  /* INSERT COIN marquee */
+  .marquee-bar {
+    height: 28px; background: #0a0018;
+    border-top: 2px solid var(--gold)44;
+    overflow: hidden; display: flex; align-items: center;
+  }
+  .marquee-text {
+    white-space: nowrap; font-size: 8px; color: var(--gold)99;
+    letter-spacing: 4px;
+    animation: marquee 18s linear infinite;
+  }
+  @keyframes marquee {
+    from{transform:translateX(100vw)} to{transform:translateX(-100%)}
+  }
+</style>
 </head>
 <body>
 
-    <audio id="bgMusic" loop src="my-arcade-song.mp3"></audio>
-    <audio id="ding" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
-    <audio id="buzz" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
+<div id="cursor"></div>
 
-    <div id="setup-overlay">
-        <h1 style="color:var(--p2-color)">ARCADE TIME RACE</h1>
-        <div style="display:flex; gap:50px">
-            <div id="p1-setup">
-                <h3>P1: Select Hero</h3>
-                <div class="char-grid">
-                    <div class="char-box" onclick="setChar(1, '👦')"><div class="avatar">👦</div>BOY</div>
-                    <div class="char-box" onclick="setChar(1, '👧')"><div class="avatar">👧</div>GIRL</div>
-                </div>
-            </div>
-            <div id="p2-setup">
-                <h3>P2: Select Hero</h3>
-                <div class="char-grid">
-                    <div class="char-box" onclick="setChar(2, '👦')"><div class="avatar">👦</div>BOY</div>
-                    <div class="char-box" onclick="setChar(2, '👧')"><div class="avatar">👧</div>GIRL</div>
-                </div>
-            </div>
+<!-- ─── SETUP OVERLAY ─── -->
+<div id="setup-overlay" class="overlay">
+  <h1>⏰ TIME ATTACK<br>ARCADE</h1>
+  <h2>— SELECT YOUR HERO —</h2>
+
+  <div class="char-panels">
+    <div class="char-panel" id="p1-setup">
+      <h3>◀ PLAYER 1 ▶</h3>
+      <div class="char-choices">
+        <div class="char-box" onclick="setChar(1,'👦','BOY')">
+          <div class="char-icon">👦</div>
+          <div class="char-name">BOY</div>
         </div>
-        <button id="start-btn" class="hidden check-btn" style="margin-top:50px; width:200px" onclick="startGame()">START! 🏁</button>
+        <div class="char-box" onclick="setChar(1,'👧','GIRL')">
+          <div class="char-icon">👧</div>
+          <div class="char-name">GIRL</div>
+        </div>
+        <div class="char-box" onclick="setChar(1,'🧒','KID')">
+          <div class="char-icon">🧒</div>
+          <div class="char-name">KID</div>
+        </div>
+        <div class="char-box" onclick="setChar(1,'🤖','BOT')">
+          <div class="char-icon">🤖</div>
+          <div class="char-name">BOT</div>
+        </div>
+      </div>
     </div>
 
-    <div id="timer-header">⏳ <span id="clock-timer">60</span>s</div>
+    <div class="divider-v"></div>
 
-    <div id="game-split">
-        <div id="p1-side" class="player-side">
-            <div id="p1-avatar" style="font-size:40px"></div>
-            <h2 id="p1-target">Loading...</h2>
-            <div class="clock">
-                <div id="p1-hour" class="hand hour-hand"></div>
-                <div id="p1-min" class="hand min-hand"></div>
-                <div class="center-dot"></div>
-            </div>
-            <div class="controls">
-                <button onclick="adjustTime(1, 'h')">HOUR +</button>
-                <button onclick="adjustTime(1, 'm')">MIN +</button>
-                <button class="check-btn" onclick="checkTime(1)">DONE!</button>
-            </div>
+    <div class="char-panel" id="p2-setup">
+      <h3>◀ PLAYER 2 ▶</h3>
+      <div class="char-choices">
+        <div class="char-box" onclick="setChar(2,'👦','BOY')">
+          <div class="char-icon">👦</div>
+          <div class="char-name">BOY</div>
         </div>
+        <div class="char-box" onclick="setChar(2,'👧','GIRL')">
+          <div class="char-icon">👧</div>
+          <div class="char-name">GIRL</div>
+        </div>
+        <div class="char-box" onclick="setChar(2,'🧒','KID')">
+          <div class="char-icon">🧒</div>
+          <div class="char-name">KID</div>
+        </div>
+        <div class="char-box" onclick="setChar(2,'🤖','BOT')">
+          <div class="char-icon">🤖</div>
+          <div class="char-name">BOT</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        <div id="p2-side" class="player-side">
-            <div id="p2-avatar" style="font-size:40px"></div>
-            <h2 id="p2-target">Loading...</h2>
-            <div class="clock">
-                <div id="p2-hour" class="hand hour-hand"></div>
-                <div id="p2-min" class="hand min-hand"></div>
-                <div class="center-dot"></div>
-            </div>
-            <div class="controls">
-                <button onclick="adjustTime(2, 'h')">HOUR +</button>
-                <button onclick="adjustTime(2, 'm')">MIN +</button>
-                <button class="check-btn" onclick="checkTime(2)">DONE!</button>
-            </div>
-        </div>
+  <div class="howto">
+    SET THE CLOCK HANDS TO MATCH THE TARGET TIME<br>
+    HOUR+ → ADVANCE HOUR &nbsp;|&nbsp; MIN+ → +15 MINUTES<br>
+    FIRST TO COMPLETE ALL 5 TIMES WINS!
+  </div>
+
+  <button id="start-btn" class="hidden" onclick="startGame()">▶ START GAME ◀</button>
+</div>
+
+<!-- ─── MAIN GAME ─── -->
+<div id="header">
+  <span style="font-size:8px;color:#666;letter-spacing:2px;">TIME ATTACK ARCADE</span>
+  <div id="global-timer">⏱ 60</div>
+  <span style="font-size:8px;color:#666;letter-spacing:2px;">v1.0</span>
+</div>
+
+<div id="game-split">
+
+  <!-- P1 -->
+  <div id="p1-side" class="player-side">
+    <div class="score-badge">SCORE: <span id="p1-score-txt">0</span> / 5</div>
+    <div id="p1-avatar" class="avatar-display"></div>
+    <div class="pips" id="p1-pips"></div>
+
+    <div class="neon-line"></div>
+
+    <div class="target-label">SET CLOCK TO:</div>
+    <div id="p1-target" class="target-time">--:--</div>
+
+    <div class="clock-wrap">
+      <div class="clock-face" id="p1-clock">
+        <div class="hand hour-hand" id="p1-hour"></div>
+        <div class="hand min-hand"  id="p1-min"></div>
+        <div class="hand sec-hand"  id="p1-sec"></div>
+        <div class="center-dot"></div>
+      </div>
     </div>
 
-    <div id="win-overlay" class="hidden">
-        <h1 id="win-msg"></h1>
-        <button class="check-btn" onclick="location.reload()">REPLAY 🔄</button>
+    <div class="digital-readout" id="p1-digital">12:00</div>
+
+    <div class="controls">
+      <button class="btn" onclick="adjustTime(1,'h')">▲ HOUR</button>
+      <button class="btn" onclick="adjustTime(1,'m')">▲ MIN</button>
+      <button class="btn btn-check" onclick="checkTime(1)">✓ DONE!</button>
     </div>
+  </div>
+
+  <!-- P2 -->
+  <div id="p2-side" class="player-side">
+    <div class="score-badge">SCORE: <span id="p2-score-txt">0</span> / 5</div>
+    <div id="p2-avatar" class="avatar-display"></div>
+    <div class="pips" id="p2-pips"></div>
+
+    <div class="neon-line"></div>
+
+    <div class="target-label">SET CLOCK TO:</div>
+    <div id="p2-target" class="target-time">--:--</div>
+
+    <div class="clock-wrap">
+      <div class="clock-face" id="p2-clock">
+        <div class="hand hour-hand" id="p2-hour"></div>
+        <div class="hand min-hand"  id="p2-min"></div>
+        <div class="hand sec-hand"  id="p2-sec"></div>
+        <div class="center-dot"></div>
+      </div>
+    </div>
+
+    <div class="digital-readout" id="p2-digital">12:00</div>
+
+    <div class="controls">
+      <button class="btn" onclick="adjustTime(2,'h')">▲ HOUR</button>
+      <button class="btn" onclick="adjustTime(2,'m')">▲ MIN</button>
+      <button class="btn btn-check" onclick="checkTime(2)">✓ DONE!</button>
+    </div>
+  </div>
+</div>
+
+<div class="marquee-bar">
+  <div class="marquee-text">⭐ INSERT COIN ⭐ HIGH SCORE: 5 ⭐ TIME ATTACK ARCADE ⭐ SET THE CLOCK ⭐ BE FASTER THAN YOUR RIVAL ⭐ INSERT COIN ⭐</div>
+</div>
+
+<!-- ─── WIN OVERLAY ─── -->
+<div id="win-overlay" class="overlay hidden">
+  <div class="win-char" id="win-char"></div>
+  <h1 id="win-msg">PLAYER 1 WINS!</h1>
+  <div class="stars">⭐⭐⭐</div>
+  <div id="win-scores" style="font-size:8px;color:#666;letter-spacing:2px;"></div>
+  <button id="replay-btn" onclick="location.reload()">↺ PLAY AGAIN</button>
+</div>
 
 <script>
-    const times = [
-        { label: "3:00", h: 3, m: 0 }, { label: "6:30", h: 6, m: 30 },
-        { label: "1:15", h: 1, m: 15 }, { label: "9:45", h: 9, m: 45 },
-        { label: "12:00", h: 12, m: 0 }
-    ];
+// ─── TIMES TO SOLVE ───
+const TIMES = [
+  { label: "3:00",  h: 3,  m: 0  },
+  { label: "6:30",  h: 6,  m: 30 },
+  { label: "1:15",  h: 1,  m: 15 },
+  { label: "9:45",  h: 9,  m: 45 },
+  { label: "12:00", h: 12, m: 0  },
+];
+const WIN_COUNT = TIMES.length;
 
-    let p1Data = { score: 0, h: 12, m: 0, char: '' };
-    let p2Data = { score: 0, h: 12, m: 0, char: '' };
-    let gameActive = false;
-    let timeLimit = 60;
+// ─── STATE ───
+let p1 = { score: 0, h: 12, m: 0, char: '', name: '' };
+let p2 = { score: 0, h: 12, m: 0, char: '', name: '' };
+let gameActive = false;
+let timeLeft = 60;
+let secAngle = 0;
+let mainInterval, secInterval;
 
-    function setChar(p, icon) {
-        if (p === 1) p1Data.char = icon; else p2Data.char = icon;
-        document.getElementById(`p${p}-avatar`).innerText = icon;
-        if (p1Data.char && p2Data.char) document.getElementById('start-btn').classList.remove('hidden');
+// ─── CURSOR ───
+document.addEventListener('mousemove', e => {
+  const c = document.getElementById('cursor');
+  c.style.left = e.clientX + 'px';
+  c.style.top = e.clientY + 'px';
+});
+
+// ─── WEB AUDIO CHIPTUNE ENGINE ───
+let audioCtx;
+
+function initAudio() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playTone(freq, type, dur, vol=0.3, delay=0) {
+  if (!audioCtx) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.connect(g); g.connect(audioCtx.destination);
+  o.type = type;
+  o.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+  g.gain.setValueAtTime(vol, audioCtx.currentTime + delay);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + dur);
+  o.start(audioCtx.currentTime + delay);
+  o.stop(audioCtx.currentTime + delay + dur + 0.05);
+}
+
+function sfxDing() {
+  playTone(880, 'square', 0.08, 0.4);
+  playTone(1320, 'square', 0.08, 0.3, 0.08);
+  playTone(1760, 'square', 0.15, 0.35, 0.16);
+}
+
+function sfxBuzz() {
+  playTone(120, 'sawtooth', 0.15, 0.5);
+  playTone(80, 'sawtooth', 0.1, 0.4, 0.08);
+}
+
+function sfxWin() {
+  const notes = [523, 659, 784, 1047, 1319, 1047, 784, 1319, 1568];
+  notes.forEach((f, i) => playTone(f, 'square', 0.18, 0.35, i * 0.12));
+}
+
+function sfxTick() {
+  playTone(2200, 'square', 0.02, 0.08);
+}
+
+function sfxUrgent() {
+  playTone(440, 'square', 0.05, 0.3);
+  playTone(220, 'square', 0.05, 0.2, 0.08);
+}
+
+// ─── CHIPTUNE BACKGROUND MUSIC ───
+let musicLoop;
+let musicPlaying = false;
+
+// Simple arcade melody: C D E G A pattern looping
+const MELODY = [
+  // [freq, dur, vol]
+  [523, 0.12, 0.18],  // C5
+  [587, 0.12, 0.18],  // D5
+  [659, 0.12, 0.18],  // E5
+  [784, 0.20, 0.22],  // G5
+  [880, 0.12, 0.20],  // A5
+  [784, 0.12, 0.18],  // G5
+  [659, 0.12, 0.16],  // E5
+  [523, 0.25, 0.20],  // C5 long
+  [392, 0.12, 0.14],  // G4
+  [440, 0.12, 0.16],  // A4
+  [523, 0.12, 0.18],  // C5
+  [659, 0.20, 0.20],  // E5
+  [587, 0.12, 0.16],  // D5
+  [523, 0.12, 0.18],  // C5
+  [440, 0.12, 0.14],  // A4
+  [392, 0.30, 0.18],  // G4 long
+];
+
+const BASS = [
+  [131, 0.20, 0.20],  // C3
+  [0,   0.12, 0],
+  [165, 0.20, 0.18],  // E3
+  [0,   0.12, 0],
+  [196, 0.20, 0.22],  // G3
+  [0,   0.12, 0],
+  [175, 0.20, 0.18],  // F3
+  [0,   0.12, 0],
+];
+
+function startMusic() {
+  if (!audioCtx || musicPlaying) return;
+  musicPlaying = true;
+
+  let melodyIdx = 0;
+  let bassIdx = 0;
+  let melodyTime = audioCtx.currentTime + 0.1;
+  let bassTime = audioCtx.currentTime + 0.1;
+  const LOOK_AHEAD = 0.5;
+
+  function scheduleMelody() {
+    while (melodyTime < audioCtx.currentTime + LOOK_AHEAD) {
+      const [f, d, v] = MELODY[melodyIdx % MELODY.length];
+      if (f > 0) playToneAt('square', f, melodyTime, d * 0.85, v);
+      melodyTime += d;
+      melodyIdx++;
     }
+  }
 
-    function startGame() {
-        document.getElementById('setup-overlay').classList.add('hidden');
-        document.getElementById('bgMusic').play();
-        gameActive = true;
-        updateClock(1); updateClock(2);
-        showTarget(1); showTarget(2);
-        
-        const timer = setInterval(() => {
-            if (!gameActive) { clearInterval(timer); return; }
-            timeLimit--;
-            document.getElementById('clock-timer').innerText = timeLimit;
-            if (timeLimit <= 0) endGame("TIME'S UP! TIE!");
-        }, 1000);
+  function scheduleBass() {
+    while (bassTime < audioCtx.currentTime + LOOK_AHEAD) {
+      const [f, d, v] = BASS[bassIdx % BASS.length];
+      if (f > 0) playToneAt('square', f, bassTime, d * 0.7, v);
+      bassTime += d;
+      bassIdx++;
     }
+  }
 
-    function adjustTime(p, type) {
-        let pData = (p === 1) ? p1Data : p2Data;
-        if (type === 'h') pData.h = (pData.h % 12) + 1;
-        else pData.m = (pData.m + 15) % 60;
-        updateClock(p);
-    }
+  function playToneAt(type, freq, when, dur, vol) {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.type = type;
+    o.frequency.setValueAtTime(freq, when);
+    g.gain.setValueAtTime(vol, when);
+    g.gain.exponentialRampToValueAtTime(0.001, when + dur);
+    o.start(when);
+    o.stop(when + dur + 0.02);
+  }
 
-    function updateClock(p) {
-        let pData = (p === 1) ? p1Data : p2Data;
-        document.getElementById(`p${p}-hour`).style.transform = `rotate(${pData.h * 30}deg)`;
-        document.getElementById(`p${p}-min`).style.transform = `rotate(${pData.m * 6}deg)`;
-    }
+  musicLoop = setInterval(() => {
+    if (!musicPlaying) { clearInterval(musicLoop); return; }
+    scheduleMelody();
+    scheduleBass();
+  }, 100);
+}
 
-    function showTarget(p) {
-        let score = (p === 1) ? p1Score : p2Score;
-        let scoreKey = (p === 1) ? p1Data.score : p2Data.score;
-        document.getElementById(`p${p}-target`).innerText = "Set to " + times[scoreKey].label;
-    }
+function stopMusic() {
+  musicPlaying = false;
+  clearInterval(musicLoop);
+}
 
-    function checkTime(p) {
-        let pData = (p === 1) ? p1Data : p2Data;
-        let target = times[pData.score];
-        if (pData.h === target.h && pData.m === target.m) {
-            document.getElementById('ding').play();
-            pData.score++;
-            if (pData.score >= times.length) endGame("PLAYER " + p + " WINS!");
-            else showTarget(p);
-        } else {
-            document.getElementById('buzz').play();
-            let side = document.getElementById(`p${p}-side`);
-            side.classList.add('flash-red');
-            setTimeout(() => side.classList.remove('flash-red'), 200);
-        }
-    }
+// ─── CHARACTER SELECT ───
+function setChar(p, icon, name) {
+  // Remove previous selections for this player
+  document.querySelectorAll(`#p${p}-setup .char-box`).forEach(b => {
+    b.classList.remove(`selected-p${p}`);
+  });
+  event.currentTarget.classList.add(`selected-p${p}`);
 
-    function endGame(msg) {
-        gameActive = false;
-        document.getElementById('win-overlay').classList.remove('hidden');
-        document.getElementById('win-msg').innerText = msg;
-        document.getElementById('bgMusic').pause();
+  if (p === 1) { p1.char = icon; p1.name = name; }
+  else         { p2.char = icon; p2.name = name; }
+
+  document.getElementById(`p${p}-avatar`).innerText = icon;
+
+  if (p1.char && p2.char) {
+    document.getElementById('start-btn').classList.remove('hidden');
+  }
+}
+
+// ─── PIPS (progress dots) ───
+function buildPips(p) {
+  const container = document.getElementById(`p${p}-pips`);
+  container.innerHTML = '';
+  const data = (p === 1) ? p1 : p2;
+  for (let i = 0; i < WIN_COUNT; i++) {
+    const pip = document.createElement('div');
+    pip.className = 'pip' + (i < data.score ? ' filled' : '');
+    container.appendChild(pip);
+  }
+}
+
+// ─── START GAME ───
+function startGame() {
+  initAudio();
+  document.getElementById('setup-overlay').classList.add('hidden');
+  gameActive = true;
+
+  buildPips(1); buildPips(2);
+  updateClock(1); updateClock(2);
+  showTarget(1); showTarget(2);
+
+  startMusic();
+
+  // Animate second hand independently
+  let secDeg = 0;
+  secInterval = setInterval(() => {
+    secDeg += 6; // 360/60
+    document.getElementById('p1-sec').style.transform = `rotate(${secDeg}deg)`;
+    document.getElementById('p2-sec').style.transform = `rotate(${secDeg}deg)`;
+  }, 1000);
+
+  // Main countdown
+  mainInterval = setInterval(() => {
+    if (!gameActive) return;
+    timeLeft--;
+    const el = document.getElementById('global-timer');
+    el.innerText = '⏱ ' + timeLeft;
+
+    if (timeLeft <= 10) {
+      el.classList.add('urgent');
+      sfxUrgent();
     }
+    if (timeLeft <= 0) {
+      // Determine winner by score
+      if (p1.score > p2.score) endGame(1, 'PLAYER 1 WINS!');
+      else if (p2.score > p1.score) endGame(2, 'PLAYER 2 WINS!');
+      else endGame(0, "IT'S A TIE!");
+    }
+  }, 1000);
+}
+
+// ─── ADJUST TIME ───
+function adjustTime(p, type) {
+  if (!gameActive) return;
+  const data = (p === 1) ? p1 : p2;
+  if (type === 'h') data.h = (data.h % 12) + 1;
+  else              data.m = (data.m + 15) % 60;
+  updateClock(p);
+  sfxTick();
+}
+
+// ─── UPDATE CLOCK VISUALS ───
+function updateClock(p) {
+  const data = (p === 1) ? p1 : p2;
+  const h = data.h % 12;
+  const m = data.m;
+
+  // Hour hand: 30° per hour + slight nudge for minutes
+  const hourDeg = h * 30 + m * 0.5;
+  // Minute hand: 6° per minute
+  const minDeg  = m * 6;
+
+  document.getElementById(`p${p}-hour`).style.transform = `rotate(${hourDeg}deg)`;
+  document.getElementById(`p${p}-min`).style.transform  = `rotate(${minDeg}deg)`;
+
+  // Digital display
+  const hDisp = data.h === 0 ? 12 : data.h;
+  const mDisp = String(m).padStart(2,'0');
+  document.getElementById(`p${p}-digital`).innerText = `${hDisp}:${mDisp}`;
+}
+
+// ─── SHOW TARGET ───
+function showTarget(p) {
+  const data = (p === 1) ? p1 : p2;
+  const target = TIMES[data.score];
+  document.getElementById(`p${p}-target`).innerText = target.label;
+}
+
+// ─── CHECK TIME ───
+function checkTime(p) {
+  if (!gameActive) return;
+  const data   = (p === 1) ? p1 : p2;
+  const target = TIMES[data.score];
+  const side   = document.getElementById(`p${p}-side`);
+
+  const hMatch = (data.h % 12) === (target.h % 12);
+  const mMatch = data.m === target.m;
+
+  if (hMatch && mMatch) {
+    sfxDing();
+    side.classList.add('flash-right');
+    setTimeout(() => side.classList.remove('flash-right'), 400);
+
+    data.score++;
+    document.getElementById(`p${p}-score-txt`).innerText = data.score;
+    buildPips(p);
+
+    if (data.score >= WIN_COUNT) {
+      endGame(p, `PLAYER ${p} WINS!`);
+    } else {
+      showTarget(p);
+    }
+  } else {
+    sfxBuzz();
+    side.classList.add('flash-wrong');
+    setTimeout(() => side.classList.remove('flash-wrong'), 300);
+  }
+}
+
+// ─── END GAME ───
+function endGame(winner, msg) {
+  gameActive = false;
+  clearInterval(mainInterval);
+  clearInterval(secInterval);
+  stopMusic();
+  sfxWin();
+
+  document.getElementById('win-msg').innerText = msg;
+  document.getElementById('win-scores').innerText =
+    `P1: ${p1.score} pts  |  P2: ${p2.score} pts`;
+
+  const winChar = winner === 1 ? p1.char : winner === 2 ? p2.char : '🏆';
+  document.getElementById('win-char').innerText = winChar;
+
+  document.getElementById('win-overlay').classList.remove('hidden');
+}
 </script>
 </body>
 </html>
