@@ -13,7 +13,7 @@
         display: flex; justify-content: center; align-items: center;
         height: 100vh; margin: 0; overflow: hidden;
         cursor: url('https://cur.cursors-4u.net/cursors/cur-13/cur1142.cur'), auto;
-        touch-action: none; /* Prevents mobile scrolling while dragging */
+        touch-action: none;
     }
 
     #game-box {
@@ -22,10 +22,8 @@
         box-shadow: 0 15px 35px rgba(0,0,0,0.1); position: relative;
     }
 
-    /* Visual Feedback Animations */
     .flash-correct { animation: glowGreen 0.6s ease; }
     .flash-wrong { animation: flashRed 0.4s ease; }
-
     @keyframes glowGreen { 0% { background: white; } 50% { background: #bdf7b7; } 100% { background: white; } }
     @keyframes flashRed { 0% { background: white; } 50% { background: #ffcfcf; } 100% { background: white; } }
 
@@ -48,14 +46,12 @@
     #toy {
         position: absolute; font-size: 60px; cursor: grab;
         z-index: 100; user-select: none; touch-action: none;
-        filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1));
     }
-    
     .toy-glow { filter: drop-shadow(0 0 15px #fffb00); animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { scale: 1; } 50% { scale: 1.1; } 100% { scale: 1; } }
 
+    .stats-bar { display: flex; justify-content: space-around; font-weight: bold; color: #ff85a1; margin-bottom: 10px; }
     .hidden { display: none; }
-    #score-display { font-size: 18px; color: #ff85a1; font-weight: bold; margin-bottom: 5px;}
     #feedback { height: 30px; font-weight: bold; margin-top: 10px; font-size: 18px; }
     
     button {
@@ -63,7 +59,6 @@
         background: var(--primary-pink); font-weight: bold; font-size: 20px;
         cursor: pointer; box-shadow: 0 5px 0 #ff85a1;
     }
-    button:active { transform: translateY(2px); box-shadow: 0 2px 0 #ff85a1; }
 </style>
 </head>
 <body>
@@ -71,12 +66,15 @@
 <div id="game-box">
     <div id="start-screen">
         <h1>🧸 Toy Carnival!</h1>
-        <p>Drag the toy to the correct spot.</p>
+        <p>Can you find all 5 toys before time runs out?</p>
         <button onclick="startGame()">Start 🚀</button>
     </div>
 
     <div id="game-screen" class="hidden">
-        <div id="score-display">Score: 0</div>
+        <div class="stats-bar">
+            <div>Score: <span id="score">0</span></div>
+            <div style="color: #555;">⏳ <span id="timer">60</span>s</div>
+        </div>
         <div id="stage">
             <div id="tray"></div>
             <div id="toy" class="toy-glow">🧸</div>
@@ -87,8 +85,15 @@
     </div>
 
     <div id="win-screen" class="hidden">
-        <h1>🎉 ALL FOUND! 🎉</h1>
+        <h1>🎉 CARNIVAL MASTER! 🎉</h1>
+        <p>You found all the toys!</p>
         <button onclick="location.reload()">Play Again 🔄</button>
+    </div>
+
+    <div id="fail-screen" class="hidden">
+        <h1>⏰ TIME'S UP!</h1>
+        <p>Try again to be faster!</p>
+        <button onclick="location.reload()">Retry 🔄</button>
     </div>
 </div>
 
@@ -107,6 +112,8 @@ const levels = [
 
 let currentLevel = 0;
 let score = 0;
+let timeLeft = 60;
+let timerId;
 let isDragging = false;
 let startX, startY;
 
@@ -114,31 +121,34 @@ const toy = document.getElementById('toy');
 const gameBox = document.getElementById('game-box');
 
 function startGame(){
-    // Music and SFX MUST be triggered by this click
-    const music = document.getElementById('bg-music');
-    music.volume = 0.2;
-    music.play().catch(e => console.log("Audio delayed"));
-
+    document.getElementById('bg-music').volume = 0.2;
+    document.getElementById('bg-music').play().catch(() => {});
+    
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
+    
+    startTimer();
     showLevel();
+}
+
+function startTimer() {
+    timerId = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').innerText = timeLeft;
+        if(timeLeft <= 0) endGame(false);
+    }, 1000);
 }
 
 function showLevel(){
     const data = levels[currentLevel];
     toy.innerText = data.toy;
-    toy.style.left = "50%";
-    toy.style.top = "10px";
-    toy.style.transform = "translateX(-50%)";
+    resetToy();
     
-    document.getElementById('furniture-container').innerHTML = 
-        `<div id="target" class="furniture ${data.furn}"></div>`;
-    document.getElementById('question-label').innerHTML = 
-        `Move the <b>${data.item}</b> <u>${data.pos.toUpperCase()}</u> the ${data.furn}.`;
+    document.getElementById('furniture-container').innerHTML = `<div id="target" class="furniture ${data.furn}"></div>`;
+    document.getElementById('question-label').innerHTML = `Move the <b>${data.item}</b> <u>${data.pos.toUpperCase()}</u> the ${data.furn}.`;
     document.getElementById('feedback').innerText = "";
 }
 
-// DRAGGING LOGIC
 toy.onpointerdown = (e) => {
     isDragging = true;
     toy.setPointerCapture(e.pointerId);
@@ -165,21 +175,17 @@ function checkPlacement() {
     const targetRect = target.getBoundingClientRect();
     const req = levels[currentLevel].pos;
 
-    // Check if toy is touching furniture
     const isOverlapping = !(toyRect.right < targetRect.left || toyRect.left > targetRect.right || 
                            toyRect.bottom < targetRect.top || toyRect.top > targetRect.bottom);
 
     if (isOverlapping) {
-        let detected = "";
-        // Detect position based on Y-axis
-        if (toyRect.bottom < targetRect.top + 45) detected = "on";
-        else if (toyRect.top > targetRect.bottom - 55) detected = "under";
-        else detected = "in";
+        let detected = (toyRect.bottom < targetRect.top + 45) ? "on" : 
+                       (toyRect.top > targetRect.bottom - 55) ? "under" : "in";
 
         if (detected === req) {
             handleResult(true);
         } else {
-            handleResult(false, `That's ${detected.toUpperCase()}! Try again.`);
+            handleResult(false, `That's ${detected.toUpperCase()}!`);
         }
     } else {
         resetToy();
@@ -191,16 +197,13 @@ function handleResult(isCorrect, msg) {
         document.getElementById('sfx-correct').play();
         gameBox.classList.add('flash-correct');
         score += 10;
-        document.getElementById('score-display').innerText = "Score: " + score;
+        document.getElementById('score').innerText = score;
         document.getElementById('feedback').innerHTML = "<span style='color:green'>✨ Correct! ✨</span>";
         setTimeout(() => {
             gameBox.classList.remove('flash-correct');
             currentLevel++;
             if(currentLevel < levels.length) showLevel();
-            else {
-                document.getElementById('game-screen').classList.add('hidden');
-                document.getElementById('win-screen').classList.remove('hidden');
-            }
+            else endGame(true);
         }, 1200);
     } else {
         document.getElementById('sfx-wrong').play();
@@ -217,6 +220,13 @@ function resetToy() {
     toy.style.left = "50%";
     toy.style.top = "10px";
     toy.style.transform = "translateX(-50%)";
+}
+
+function endGame(win) {
+    clearInterval(timerId);
+    document.getElementById('game-screen').classList.add('hidden');
+    if(win) document.getElementById('win-screen').classList.remove('hidden');
+    else document.getElementById('fail-screen').classList.remove('hidden');
 }
 </script>
 </body>
