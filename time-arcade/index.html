@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Attack Arcade</title>
+    <style>
+        :root { --p1-color: #ff0055; --p2-color: #00ffcc; }
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0; background: #000; color: #fff;
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+        }
+        #timer-header {
+            height: 60px; background: #222; border-bottom: 4px solid #444;
+            display: flex; justify-content: center; align-items: center; font-size: 30px; color: #ffeb3b;
+        }
+        #game-split { display: flex; flex: 1; }
+        .player-side {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; position: relative; transition: background 0.2s;
+        }
+        #p1-side { border-right: 2px solid #444; }
+        
+        /* THE CLOCK */
+        .clock {
+            width: 180px; height: 180px; border: 8px solid white;
+            border-radius: 50%; position: relative; background: #eee; margin: 20px;
+        }
+        .hand {
+            position: absolute; bottom: 50%; left: 50%; transform-origin: bottom;
+            background: black; border-radius: 5px; transition: transform 0.3s cubic-bezier(0.4, 2.08, 0.55, 0.44);
+        }
+        .hour-hand { width: 6px; height: 50px; }
+        .min-hand { width: 4px; height: 75px; background: red; }
+        .center-dot {
+            position: absolute; top: 50%; left: 50%; width: 12px; height: 12px;
+            background: black; border-radius: 50%; transform: translate(-50%, -50%);
+        }
+
+        .display-time { font-size: 24px; margin: 10px; color: #ffeb3b; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        button {
+            padding: 10px; font-weight: bold; cursor: pointer; border: none;
+            border-radius: 5px; background: #444; color: white;
+        }
+        .check-btn { grid-column: span 2; background: #4CAF50; padding: 15px; font-size: 18px; }
+
+        /* CHARACTER SELECTION */
+        #setup-overlay, #win-overlay {
+            position: fixed; inset: 0; background: #000; z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .char-grid { display: flex; gap: 40px; }
+        .char-box { text-align: center; cursor: pointer; border: 4px solid transparent; padding: 10px; }
+        .char-box:hover { border-color: var(--p1-color); }
+        .avatar { font-size: 80px; }
+
+        .flash-red { background: rgba(255, 0, 0, 0.8) !important; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <audio id="bgMusic" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"></audio>
+    <audio id="ding" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+    <audio id="buzz" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
+
+    <div id="setup-overlay">
+        <h1 style="color:var(--p2-color)">ARCADE TIME RACE</h1>
+        <div style="display:flex; gap:50px">
+            <div id="p1-setup">
+                <h3>P1: Select Hero</h3>
+                <div class="char-grid">
+                    <div class="char-box" onclick="setChar(1, '👦')"><div class="avatar">👦</div>BOY</div>
+                    <div class="char-box" onclick="setChar(1, '👧')"><div class="avatar">👧</div>GIRL</div>
+                </div>
+            </div>
+            <div id="p2-setup">
+                <h3>P2: Select Hero</h3>
+                <div class="char-grid">
+                    <div class="char-box" onclick="setChar(2, '👦')"><div class="avatar">👦</div>BOY</div>
+                    <div class="char-box" onclick="setChar(2, '👧')"><div class="avatar">👧</div>GIRL</div>
+                </div>
+            </div>
+        </div>
+        <button id="start-btn" class="hidden check-btn" style="margin-top:50px; width:200px" onclick="startGame()">START! 🏁</button>
+    </div>
+
+    <div id="timer-header">⏳ <span id="clock-timer">60</span>s</div>
+
+    <div id="game-split">
+        <div id="p1-side" class="player-side">
+            <div id="p1-avatar" style="font-size:40px"></div>
+            <h2 id="p1-target">Loading...</h2>
+            <div class="clock">
+                <div id="p1-hour" class="hand hour-hand"></div>
+                <div id="p1-min" class="hand min-hand"></div>
+                <div class="center-dot"></div>
+            </div>
+            <div class="controls">
+                <button onclick="adjustTime(1, 'h')">HOUR +</button>
+                <button onclick="adjustTime(1, 'm')">MIN +</button>
+                <button class="check-btn" onclick="checkTime(1)">DONE!</button>
+            </div>
+        </div>
+
+        <div id="p2-side" class="player-side">
+            <div id="p2-avatar" style="font-size:40px"></div>
+            <h2 id="p2-target">Loading...</h2>
+            <div class="clock">
+                <div id="p2-hour" class="hand hour-hand"></div>
+                <div id="p2-min" class="hand min-hand"></div>
+                <div class="center-dot"></div>
+            </div>
+            <div class="controls">
+                <button onclick="adjustTime(2, 'h')">HOUR +</button>
+                <button onclick="adjustTime(2, 'm')">MIN +</button>
+                <button class="check-btn" onclick="checkTime(2)">DONE!</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="win-overlay" class="hidden">
+        <h1 id="win-msg"></h1>
+        <button class="check-btn" onclick="location.reload()">REPLAY 🔄</button>
+    </div>
+
+<script>
+    const times = [
+        { label: "3:00", h: 3, m: 0 }, { label: "6:30", h: 6, m: 30 },
+        { label: "1:15", h: 1, m: 15 }, { label: "9:45", h: 9, m: 45 },
+        { label: "12:00", h: 12, m: 0 }
+    ];
+
+    let p1Data = { score: 0, h: 12, m: 0, char: '' };
+    let p2Data = { score: 0, h: 12, m: 0, char: '' };
+    let gameActive = false;
+    let timeLimit = 60;
+
+    function setChar(p, icon) {
+        if (p === 1) p1Data.char = icon; else p2Data.char = icon;
+        document.getElementById(`p${p}-avatar`).innerText = icon;
+        if (p1Data.char && p2Data.char) document.getElementById('start-btn').classList.remove('hidden');
+    }
+
+    function startGame() {
+        document.getElementById('setup-overlay').classList.add('hidden');
+        document.getElementById('bgMusic').play();
+        gameActive = true;
+        updateClock(1); updateClock(2);
+        showTarget(1); showTarget(2);
+        
+        const timer = setInterval(() => {
+            if (!gameActive) { clearInterval(timer); return; }
+            timeLimit--;
+            document.getElementById('clock-timer').innerText = timeLimit;
+            if (timeLimit <= 0) endGame("TIME'S UP! TIE!");
+        }, 1000);
+    }
+
+    function adjustTime(p, type) {
+        let pData = (p === 1) ? p1Data : p2Data;
+        if (type === 'h') pData.h = (pData.h % 12) + 1;
+        else pData.m = (pData.m + 15) % 60;
+        updateClock(p);
+    }
+
+    function updateClock(p) {
+        let pData = (p === 1) ? p1Data : p2Data;
+        document.getElementById(`p${p}-hour`).style.transform = `rotate(${pData.h * 30}deg)`;
+        document.getElementById(`p${p}-min`).style.transform = `rotate(${pData.m * 6}deg)`;
+    }
+
+    function showTarget(p) {
+        let score = (p === 1) ? p1Score : p2Score;
+        let scoreKey = (p === 1) ? p1Data.score : p2Data.score;
+        document.getElementById(`p${p}-target`).innerText = "Set to " + times[scoreKey].label;
+    }
+
+    function checkTime(p) {
+        let pData = (p === 1) ? p1Data : p2Data;
+        let target = times[pData.score];
+        if (pData.h === target.h && pData.m === target.m) {
+            document.getElementById('ding').play();
+            pData.score++;
+            if (pData.score >= times.length) endGame("PLAYER " + p + " WINS!");
+            else showTarget(p);
+        } else {
+            document.getElementById('buzz').play();
+            let side = document.getElementById(`p${p}-side`);
+            side.classList.add('flash-red');
+            setTimeout(() => side.classList.remove('flash-red'), 200);
+        }
+    }
+
+    function endGame(msg) {
+        gameActive = false;
+        document.getElementById('win-overlay').classList.remove('hidden');
+        document.getElementById('win-msg').innerText = msg;
+        document.getElementById('bgMusic').pause();
+    }
+</script>
+</body>
+</html>
