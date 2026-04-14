@@ -8,7 +8,6 @@
     /* MINECRAFT THEME COLORS & FONTS */
     :root {
       --mc-green: #5aa32a;
-      --mc-dirt: #795548;
       --mc-gui: #c6c6c6;
       --mc-border-light: #ffffff;
       --mc-border-dark: #555555;
@@ -30,7 +29,6 @@
     .screen { display: none; padding: 1.5rem 1rem; width: 100%; max-width: 850px; margin: 0 auto; }
     .screen.active { display: block; }
 
-    /* Minecraft UI Box Style */
     .mc-container {
       background: var(--mc-gui);
       border: 4px solid #000;
@@ -40,10 +38,8 @@
     }
 
     h1, h2 { text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px #000; color: #fff; margin-bottom: 15px; text-align: center; }
-    
     p { font-size: 14px; margin-bottom: 10px; color: #fff; text-shadow: 1px 1px #000; text-align: center; }
 
-    /* Blocky Buttons */
     .btn {
       display: block;
       margin: 10px auto;
@@ -60,7 +56,6 @@
     .btn:hover:not(:disabled) { background: var(--mc-btn-hover); box-shadow: inset -3px -3px #4e6a1f, inset 3px 3px #a5d64e; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* Avatar picker */
     .avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 1.5rem 0; }
     .avatar-card { 
       background: #8b8b8b; 
@@ -73,7 +68,6 @@
     .avatar-card.selected-p1 { background: #3b5fe2; box-shadow: inset -3px -3px #1a2d8a, inset 3px 3px #839ef5; }
     .avatar-card.selected-p2 { background: var(--mc-green); box-shadow: inset -3px -3px #2d5015, inset 3px 3px #a5d64e; }
 
-    /* Race layout */
     .race-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .player-col { 
       background: var(--mc-gui); 
@@ -90,8 +84,8 @@
       padding: 12px; 
       margin-bottom: 10px; 
       font-size: 13px; 
-      min-height: 110px;
-      line-height: 1.4;
+      min-height: 120px;
+      line-height: 1.5;
     }
 
     .ans-btn { 
@@ -168,7 +162,6 @@
 </div>
 
 <script>
-  // --- SOUND ENGINE ---
   let audioCtx;
   function playSound(type) {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -212,7 +205,6 @@
     }
   }
 
-  // --- GAME LOGIC ---
   const avatars = [
     {icon:'🧟',name:'Zombie'},{icon:'💀',name:'Skeleton'},
     {icon:'🐷',name:'Pigman'},{icon:'🌲',name:'Steve'},
@@ -221,14 +213,14 @@
   ];
 
   const allQuestions = [
-    { clue:"I wear heavy armor and enter burning village houses to save villagers. I use a bucket of water and a diamond axe.", answer:"Firefighter", choices:["Firefighter","Police Officer","Engineer","Scientist"] },
-    { clue:"I patrol the server to keep players safe. I have a badge and a uniform. If someone griefs, I stop them.", answer:"Police Officer", choices:["Reporter","Police Officer","Singer","Firefighter"] },
-    { clue:"I play a game with a leather ball in a massive obsidian stadium. Millions of fans watch my streams.", answer:"Baseball Player", choices:["Baseball Player","Singer","YouTuber","Engineer"] },
-    { clue:"I travel to the Far Lands to report on what is happening. I interview the top crafters and write for the daily scroll.", answer:"Reporter", choices:["Reporter","Scientist","Police Officer","YouTuber"] },
-    { clue:"I spend my days at a brewing stand with glass bottles. I do experiments to find out how potions work.", answer:"Scientist", choices:["Engineer","Scientist","Reporter","Baseball Player"] },
-    { clue:"I perform on top of note blocks and use my voice to entertain the server. Players come from far away to hear me.", answer:"Singer", choices:["Singer","Firefighter","YouTuber","Scientist"] },
-    { clue:"I record my screen while I build epic bases. I post the footage for people to watch. Subscribe for diamonds!", answer:"YouTuber", choices:["Reporter","Singer","YouTuber","Police Officer"] },
-    { clue:"I use redstone and blueprints to build massive bridges and automatic iron farms. I solve complex machinery problems.", answer:"Engineer", choices:["Engineer","Scientist","Baseball Player","Firefighter"] }
+    { clue:"I wear a big helmet and heavy protective clothing. When a building is on fire, I rush in to save people. I carry a hose and sometimes an axe. My job is very dangerous but I love helping others stay safe.", answer:"Firefighter", choices:["Firefighter","Police Officer","Engineer","Scientist"] },
+    { clue:"I wear a uniform and a badge. I patrol the streets to keep people safe. I can arrest someone who breaks the law. People call me when there is an emergency or a crime.", answer:"Police Officer", choices:["Reporter","Police Officer","Singer","Firefighter"] },
+    { clue:"I play a sport with a bat and a ball. I run around bases and try to score points for my team. Games are played in a large stadium and fans cheer loudly. I practice a lot to throw, catch, and hit well.", answer:"Baseball Player", choices:["Baseball Player","Singer","YouTuber","Engineer"] },
+    { clue:"I write stories and news for TV, newspaper, or the internet. I interview people and ask lots of questions. I go where important things happen to tell the world what is going on. My job is to share the truth.", answer:"Reporter", choices:["Reporter","Scientist","Police Officer","YouTuber"] },
+    { clue:"I work in a lab and do experiments. I ask questions about the world and try to find answers. I use microscopes, chemicals, and data. My discoveries can help make new medicine or explain how nature works.", answer:"Scientist", choices:["Engineer","Scientist","Reporter","Baseball Player"] },
+    { clue:"I perform on stage and record music. People listen to my songs on the radio and on their phones. I use my voice as my instrument. Sometimes I go on tour and perform in big concerts around the world.", answer:"Singer", choices:["Singer","Firefighter","YouTuber","Scientist"] },
+    { clue:"I make videos and post them online for people to watch. I film myself talking, playing games, cooking, or doing challenges. I edit the videos on my computer. I earn money when many people subscribe to my channel.", answer:"YouTuber", choices:["Reporter","Singer","YouTuber","Police Officer"] },
+    { clue:"I use math and science to design and build things — like bridges, machines, phones, or buildings. I solve problems and make sure everything works safely. I often draw detailed plans before building anything.", answer:"Engineer", choices:["Engineer","Scientist","Baseball Player","Firefighter"] }
   ];
 
   let p1Av = null, p2Av = null, pickPhase = 1;
@@ -353,12 +345,12 @@
     const wAv = winner === 1 ? p1Av : p2Av;
     const lAv = winner === 1 ? p2Av : p1Av;
     document.getElementById('end-title').textContent = 'PLAYER ' + winner + ' WINS!';
-    document.getElementById('end-msg').textContent = avatars[wAv].name + " out-crafted " + avatars[lAv].name + "!";
+    document.getElementById('end-msg').textContent = avatars[wAv].name + " finished the race faster than " + avatars[lAv].name + "!";
     showScreen('screen-end');
   }
 
   function restartGame() {
-    location.reload(); // Simplest way to reset all states
+    location.reload();
   }
 
   buildPickGrid();
