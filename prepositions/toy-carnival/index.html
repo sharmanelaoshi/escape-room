@@ -12,7 +12,6 @@
         background: linear-gradient(135deg, #ffe5ec, var(--soft-blue));
         display: flex; justify-content: center; align-items: center;
         height: 100vh; margin: 0; overflow: hidden;
-        /* Custom Cursor */
         cursor: url('https://cur.cursors-4u.net/cursors/cur-13/cur1142.cur'), auto;
         touch-action: none;
     }
@@ -24,8 +23,20 @@
     }
 
     /* Visual Feedback */
-    .flash-correct { background: #d4ffd6 !important; }
-    .flash-wrong { background: #ffd6d6 !important; }
+    .flash-correct { animation: glowGreen 0.6s; }
+    .flash-wrong { animation: flashRed 0.4s; }
+
+    @keyframes glowGreen {
+        0% { background: white; }
+        50% { background: #bdf7b7; box-shadow: 0 0 20px #2ecc71; }
+        100% { background: white; }
+    }
+
+    @keyframes flashRed {
+        0% { background: white; }
+        50% { background: #ffcfcf; }
+        100% { background: white; }
+    }
 
     #stage {
         width: 100%; height: 320px; background: #f1fbff;
@@ -33,9 +44,8 @@
         border: 3px solid #a2d2ff; overflow: hidden;
     }
 
-    /* The "Starting Tray" area */
     #tray {
-        width: 100%; height: 80px; background: rgba(255,255,255,0.5);
+        width: 100%; height: 80px; background: rgba(255,255,255,0.6);
         border-bottom: 2px dashed #a2d2ff; position: absolute; top: 0;
     }
 
@@ -51,21 +61,20 @@
         position: absolute; font-size: 60px; cursor: grab;
         z-index: 100; user-select: none; touch-action: none;
         filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1));
-        transition: transform 0.2s;
     }
-    #toy:active { cursor: grabbing; transform: scale(1.2); }
-    .toy-glow { filter: drop-shadow(0 0 10px #fffb00) !important; }
+    
+    .toy-glow { filter: drop-shadow(0 0 15px #fffb00) !important; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { scale: 1; } 50% { scale: 1.1; } 100% { scale: 1; } }
 
     .hidden { display: none; }
-    #score-display { font-size: 18px; color: #ff85a1; font-weight: bold; margin-bottom: 5px;}
+    #score-display { font-size: 18px; color: #ff85a1; font-weight: bold; }
     #feedback { height: 30px; font-weight: bold; margin-top: 10px; font-size: 18px; }
     
     button {
         padding: 15px 35px; border-radius: 15px; border: none;
         background: var(--primary-pink); font-weight: bold; font-size: 20px;
-        cursor: pointer; box-shadow: 0 5px 0 #ff85a1; transition: 0.1s;
+        cursor: pointer; box-shadow: 0 5px 0 #ff85a1;
     }
-    button:active { transform: translateY(3px); box-shadow: none; }
 </style>
 </head>
 <body>
@@ -73,8 +82,8 @@
 <div id="game-box">
     <div id="start-screen">
         <h1>🧸 Toy Escape!</h1>
-        <p>Drag the toy to the correct position.</p>
-        <button onclick="startGame()">Start 🚀</button>
+        <p>Drag the toy to the correct position!</p>
+        <button onclick="startGame()">Start & Play Music 🚀</button>
     </div>
 
     <div id="game-screen" class="hidden">
@@ -89,14 +98,14 @@
     </div>
 
     <div id="win-screen" class="hidden">
-        <h1>🎉 ALL FOUND! 🎉</h1>
+        <h1>🎉 MISSION COMPLETE! 🎉</h1>
         <button onclick="location.reload()">Play Again 🔄</button>
     </div>
 </div>
 
-<audio id="sfx-correct" src="https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3"></audio>
-<audio id="sfx-wrong" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-946.mp3"></audio>
-<audio id="bg-music" src="https://www.chosic.com/wp-content/uploads/2021/07/The-Happy-Walk.mp3" loop></audio>
+<audio id="sfx-correct" src="https://cdn.pixabay.com/audio/2021/08/04/audio_bb6300843e.mp3"></audio>
+<audio id="sfx-wrong" src="https://cdn.pixabay.com/audio/2022/03/10/audio_c350711909.mp3"></audio>
+<audio id="bg-music" src="https://cdn.pixabay.com/audio/2022/01/26/audio_d1e996ef2c.mp3" loop></audio>
 
 <script>
 const levels = [
@@ -116,38 +125,37 @@ const toy = document.getElementById('toy');
 const gameBox = document.getElementById('game-box');
 
 function startGame(){
+    // IMPORTANT: Sound must start AFTER a user click
+    const music = document.getElementById('bg-music');
+    music.volume = 0.2;
+    music.play().catch(e => console.log("Audio Blocked: ", e));
+
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
-    document.getElementById('bg-music').volume = 0.15;
-    document.getElementById('bg-music').play().catch(() => {});
     showLevel();
 }
 
 function showLevel(){
     const data = levels[currentLevel];
-    
-    // 1. Reset Toy Position to the TOP TRAY
     toy.innerText = data.toy;
     toy.style.left = "50%";
     toy.style.top = "10px";
     toy.style.transform = "translateX(-50%)";
     
-    // 2. Set Furniture
     document.getElementById('furniture-container').innerHTML = 
         `<div id="target" class="furniture ${data.furn}"></div>`;
     
-    // 3. Update Instruction
     document.getElementById('question-label').innerHTML = 
         `Put the <b>${data.item}</b> <u>${data.pos.toUpperCase()}</u> the ${data.furn}.`;
     
     document.getElementById('feedback').innerText = "";
 }
 
-// Modern Pointer Logic (Touch + Mouse)
+// Pointer Handling
 toy.onpointerdown = (e) => {
     isDragging = true;
     toy.setPointerCapture(e.pointerId);
-    toy.style.transform = "none"; // Remove the centering transform while dragging
+    toy.style.transform = "none";
     startX = e.clientX - toy.offsetLeft;
     startY = e.clientY - toy.offsetTop;
 };
@@ -170,66 +178,61 @@ function checkPlacement() {
     const targetRect = target.getBoundingClientRect();
     const requiredPos = levels[currentLevel].pos;
 
-    // Check overlap
     const isOverlapping = !(toyRect.right < targetRect.left || toyRect.left > targetRect.right || 
                            toyRect.bottom < targetRect.top || toyRect.top > targetRect.bottom);
 
     if (isOverlapping) {
         let detectedPos = "";
         
-        // Vertical Detection
-        // ON: Toy bottom is near the top of furniture
-        // UNDER: Toy top is near the bottom of furniture
-        // IN: Overlapping the main body
-        if (toyRect.bottom < targetRect.top + 40) {
+        // Logical detection based on Y-axis
+        if (toyRect.bottom < targetRect.top + 45) {
             detectedPos = "on";
-        } else if (toyRect.top > targetRect.bottom - 50) {
+        } else if (toyRect.top > targetRect.bottom - 55) {
             detectedPos = "under";
         } else {
             detectedPos = "in";
         }
 
         if (detectedPos === requiredPos) {
-            success();
+            handleResult(true);
         } else {
-            fail(`Close! But that is ${detectedPos.toUpperCase()}.`);
+            handleResult(false, `Oops! That's ${detectedPos.toUpperCase()}!`);
         }
     } else {
-        // Snaps back if dropped in the middle of nowhere
         toy.style.left = "50%";
         toy.style.top = "10px";
         toy.style.transform = "translateX(-50%)";
     }
 }
 
-function success() {
-    document.getElementById('sfx-correct').play();
-    gameBox.classList.add('flash-correct');
-    score += 10;
-    document.getElementById('score-display').innerText = "Score: " + score;
-    document.getElementById('feedback').innerHTML = "<span style='color:#2ecc71'>✨ Perfect! ✨</span>";
-    
-    setTimeout(() => {
-        gameBox.classList.remove('flash-correct');
-        currentLevel++;
-        if(currentLevel < levels.length) showLevel();
-        else finishGame();
-    }, 1200);
-}
-
-function fail(msg) {
-    document.getElementById('sfx-wrong').currentTime = 0;
-    document.getElementById('sfx-wrong').play();
-    gameBox.classList.add('flash-wrong');
-    document.getElementById('feedback').innerHTML = `<span style='color:#e74c3c'>${msg}</span>`;
-    
-    setTimeout(() => {
-        gameBox.classList.remove('flash-wrong');
-        // Reset position
-        toy.style.left = "50%";
-        toy.style.top = "10px";
-        toy.style.transform = "translateX(-50%)";
-    }, 1000);
+function handleResult(isCorrect, msg) {
+    if (isCorrect) {
+        document.getElementById('sfx-correct').currentTime = 0;
+        document.getElementById('sfx-correct').play();
+        gameBox.classList.add('flash-correct');
+        score += 10;
+        document.getElementById('score-display').innerText = "Score: " + score;
+        document.getElementById('feedback').innerHTML = "<span style='color:#2ecc71'>✨ Great Job! ✨</span>";
+        
+        setTimeout(() => {
+            gameBox.classList.remove('flash-correct');
+            currentLevel++;
+            if(currentLevel < levels.length) showLevel();
+            else finishGame();
+        }, 1200);
+    } else {
+        document.getElementById('sfx-wrong').currentTime = 0;
+        document.getElementById('sfx-wrong').play();
+        gameBox.classList.add('flash-wrong');
+        document.getElementById('feedback').innerHTML = `<span style='color:#e74c3c'>${msg}</span>`;
+        
+        setTimeout(() => {
+            gameBox.classList.remove('flash-wrong');
+            toy.style.left = "50%";
+            toy.style.top = "10px";
+            toy.style.transform = "translateX(-50%)";
+        }, 1000);
+    }
 }
 
 function finishGame() {
