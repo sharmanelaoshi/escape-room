@@ -3,254 +3,226 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎮 Toy Position Master</title>
+<title>✨ Toy Escape Adventure</title>
 
 <style>
 body {
     font-family: 'Comic Sans MS', cursive;
-    background: linear-gradient(135deg,#ffe5ec,#e0f7ff);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    margin:0;
+    background: linear-gradient(135deg, #ffe5ec, #e0f7ff);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    cursor: url('https://cur.cursors-4u.net/cursors/cur-13/cur1142.cur'), auto;
 }
 
-/* FLASH */
-.flash-correct { background:#d4ffd6 !important; }
-.flash-wrong { background:#ffd6d6 !important; }
+/* FLASH EFFECT */
+.flash-correct { background: #d4ffd6 !important; }
+.flash-wrong { background: #ffd6d6 !important; }
 
-#game {
-    background:white;
-    padding:20px;
-    border-radius:25px;
-    width:420px;
-    text-align:center;
-    box-shadow:0 10px 25px rgba(0,0,0,0.2);
+#game-box {
+    background: white;
+    border-radius: 25px;
+    padding: 20px;
+    width: 95%;
+    max-width: 450px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
 
 #stage {
-    height:220px;
-    background:#f0fbff;
-    border-radius:20px;
-    position:relative;
-    margin-bottom:15px;
-    border:3px solid #a2d2ff;
+    width: 100%;
+    height: 220px;
+    background: #f1fbff;
+    border-radius: 20px;
+    position: relative;
+    margin-bottom: 20px;
+    overflow: hidden;
+    border: 3px solid #a2d2ff;
 }
 
-/* FURNITURE */
+/* Furniture */
 .furniture {
-    position:absolute;
-    bottom:30px;
-    left:50%;
-    transform:translateX(-50%);
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
-.desk { width:160px; height:70px; background:#8d6e63; border-bottom:30px solid #5d4037; }
-.box { width:120px; height:90px; background:#ddd; border:5px solid #999; }
-.chair { width:90px; height:60px; background:#ffc2d1; border-bottom:40px solid #ff85a1; }
-
-/* DROP ZONES */
-.zone {
-    position:absolute;
-    width:100%;
-    height:100%;
-    pointer-events:none;
-}
-
-.zone.on { top:0; height:100px; }
-.zone.in { top:90px; height:80px; }
-.zone.under { bottom:0; height:60px; }
+.desk { width: 160px; height: 70px; background: #8d6e63; border-bottom: 30px solid #5d4037; }
+.box { width: 120px; height: 90px; background: #ddd; border: 5px solid #999; }
+.chair { width: 90px; height: 60px; background: #ffc2d1; border-bottom: 40px solid #ff85a1; }
 
 /* TOY */
 #toy {
-    font-size:60px;
-    position:absolute;
-    top:10px;
-    left:10px;
-    cursor:grab;
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    font-size: 70px;
+    transition: all 0.5s ease;
 }
 
-/* BUTTON */
+/* POSITIONS */
+.pos-on { bottom: 100px; }
+.pos-in { bottom: 40px; opacity: 0.9; }
+.pos-under { bottom: -5px; }
+
+/* BUTTONS */
+.options-grid {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 10px;
+}
+
 button {
-    padding:12px;
-    margin-top:10px;
-    border:none;
-    border-radius:10px;
-    background:#ffc2d1;
-    font-weight:bold;
-    cursor:pointer;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    background: #ffc2d1;
+    cursor: pointer;
+    transition: 0.2s;
 }
 
-button:hover { background:#ffafcc; }
-
-#info {
-    font-size:14px;
-    margin-bottom:5px;
+button:hover {
+    transform: scale(1.05);
+    background: #ffafcc;
 }
 
 #feedback {
-    height:25px;
-    font-weight:bold;
+    height: 30px;
+    margin-top: 10px;
+    font-weight: bold;
 }
 
-.hidden { display:none; }
+.hidden { display: none; }
+
+#score {
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #555;
+}
 </style>
 </head>
 
 <body>
 
-<div id="game">
+<div id="game-box">
 
-<div id="start">
-<h2>🧸 Drag & Learn!</h2>
-<p>Put the toy in the correct place!</p>
+<div id="start-screen">
+<h1>🧸 Toy Escape!</h1>
+<p>Look carefully… where is the toy?</p>
 <button onclick="startGame()">Start 🚀</button>
 </div>
 
-<div id="play" class="hidden">
+<div id="game-screen" class="hidden">
 
-<div id="info">
-Score: <span id="score">0</span> | Time: <span id="time">30</span>
-</div>
+<div id="score">Score: 0</div>
 
 <div id="stage">
-<div id="toy" draggable="true">🧸</div>
-<div id="furniture"></div>
-
-<div class="zone on"></div>
-<div class="zone in"></div>
-<div class="zone under"></div>
+<div id="toy">🧸</div>
+<div id="furniture-container"></div>
 </div>
 
-<p id="question"><b>Put the toy ___ the box</b></p>
+<p id="question-label"><b>The toy is ___ the furniture.</b></p>
 
-<button onclick="checkAnswer()">Check ✅</button>
+<div class="options-grid">
+<button onclick="check('on')">ON</button>
+<button onclick="check('in')">IN</button>
+<button onclick="check('under')">UNDER</button>
+</div>
 
 <div id="feedback"></div>
-
 </div>
 
-<div id="end" class="hidden">
-<h2>🎉 Finished!</h2>
-<p>Your score: <span id="finalScore"></span></p>
+<div id="win-screen" class="hidden">
+<h1>🎉 YOU ESCAPED! 🎉</h1>
+<p>All toys found!</p>
 <button onclick="location.reload()">Play Again 🔄</button>
 </div>
 
 </div>
 
 <!-- SOUNDS -->
-<audio id="correct" src="https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3"></audio>
-<audio id="wrong" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-946.mp3"></audio>
+<audio id="correctSound" src="https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3"></audio>
+<audio id="wrongSound" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-946.mp3"></audio>
+<audio id="winSound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-level-completed-2059.mp3"></audio>
 
 <script>
 
-const items = ["box","desk","chair"];
-const positions = ["on","in","under"];
-const toys = ["🧸","🤖","🚗","🪀","🪆"];
+const levels = [
+{ toy:"🧸", item:"toy", furn:"box", pos:"in" },
+{ toy:"🤖", item:"robot", furn:"desk", pos:"on" },
+{ toy:"🪆", item:"doll", furn:"chair", pos:"under" },
+{ toy:"🚗", item:"car", furn:"box", pos:"on" },
+{ toy:"🪀", item:"yo-yo", furn:"desk", pos:"under" }
+];
 
-let current = {};
+let currentLevel = 0;
 let score = 0;
-let time = 30;
-let chosen = "";
-
-function randomize(){
-return {
-toy: toys[Math.floor(Math.random()*toys.length)],
-item: items[Math.floor(Math.random()*items.length)],
-pos: positions[Math.floor(Math.random()*positions.length)]
-};
-}
 
 function startGame(){
-document.getElementById('start').classList.add('hidden');
-document.getElementById('play').classList.remove('hidden');
-
-nextRound();
-startTimer();
+document.getElementById('start-screen').classList.add('hidden');
+document.getElementById('game-screen').classList.remove('hidden');
+showLevel();
 }
 
-function nextRound(){
-current = randomize();
-chosen = "";
+function showLevel(){
+const data = levels[currentLevel];
 
-document.getElementById('toy').innerText = current.toy;
-document.getElementById('furniture').innerHTML =
-`<div class="furniture ${current.item}"></div>`;
+document.getElementById('toy').innerText = data.toy;
+document.getElementById('furniture-container').innerHTML =
+`<div class="furniture ${data.furn}"></div>`;
 
-document.getElementById('question').innerText =
-`Put the toy ${current.pos} the ${current.item}`;
+document.getElementById('question-label').innerText =
+`The ${data.item} is ___ the ${data.furn}.`;
+
+const toy = document.getElementById('toy');
+toy.className = "";
+toy.classList.add('pos-' + data.pos);
 
 document.getElementById('feedback').innerText = "";
 }
 
-/* DRAG */
-const toy = document.getElementById("toy");
-
-toy.addEventListener("dragend", e=>{
-let y = e.clientY;
-let stage = document.getElementById("stage").getBoundingClientRect();
-
-let relativeY = y - stage.top;
-
-if(relativeY < 100){
-chosen = "on";
-toy.style.top = "20px";
-}
-else if(relativeY < 170){
-chosen = "in";
-toy.style.top = "100px";
-}
-else{
-chosen = "under";
-toy.style.top = "170px";
-}
-});
-
-function flash(type){
-document.body.classList.add(type);
-setTimeout(()=> document.body.classList.remove(type),300);
+function flash(colorClass){
+document.body.classList.add(colorClass);
+setTimeout(()=> document.body.classList.remove(colorClass), 300);
 }
 
-function checkAnswer(){
-if(!chosen){
-document.getElementById('feedback').innerText = "Drag the toy first!";
-return;
-}
+function check(choice){
+const correct = levels[currentLevel].pos;
+const feedback = document.getElementById('feedback');
 
-if(chosen === current.pos){
-document.getElementById('correct').play();
+if(choice === correct){
+document.getElementById('correctSound').play();
 flash('flash-correct');
 
 score++;
-document.getElementById('score').innerText = score;
-document.getElementById('feedback').innerText = "Correct! ✨";
+document.getElementById('score').innerText = "Score: " + score;
 
-setTimeout(nextRound,700);
+feedback.style.color = "green";
+feedback.innerText = "Correct! ✨";
+
+setTimeout(()=>{
+currentLevel++;
+if(currentLevel < levels.length){
+showLevel();
+}else{
+document.getElementById('game-screen').classList.add('hidden');
+document.getElementById('win-screen').classList.remove('hidden');
+document.getElementById('winSound').play();
+}
+},700);
 
 }else{
-document.getElementById('wrong').play();
+document.getElementById('wrongSound').play();
 flash('flash-wrong');
-document.getElementById('feedback').innerText = "Try again!";
-}
-}
 
-function startTimer(){
-let timer = setInterval(()=>{
-time--;
-document.getElementById('time').innerText = time;
-
-if(time <= 0){
-clearInterval(timer);
-endGame();
+feedback.style.color = "red";
+feedback.innerText = "Try again!";
 }
-},1000);
-}
-
-function endGame(){
-document.getElementById('play').classList.add('hidden');
-document.getElementById('end').classList.remove('hidden');
-document.getElementById('finalScore').innerText = score;
 }
 
 </script>
