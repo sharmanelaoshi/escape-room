@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jobs Escape Room</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; color: #222; min-height: 100vh; }
+    .screen { display: none; padding: 1.5rem 1rem; max-width: 800px; margin: 0 auto; }
+    .screen.active { display: block; }
+    h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; color: #1a1a1a; }
+    h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; color: #1a1a1a; }
+    p { font-size: 14px; color: #555; line-height: 1.6; }
+    .subtitle { font-size: 13px; color: #777; margin-bottom: 1rem; }
+    .btn { display: inline-block; padding: 10px 24px; border: 1.5px solid #ccc; border-radius: 8px; background: #fff; color: #333; font-size: 14px; cursor: pointer; transition: background .15s; }
+    .btn:hover { background: #f0f0f0; }
+    .btn-primary { background: #3b5fe2; border-color: #3b5fe2; color: #fff; }
+    .btn-primary:hover { background: #2d4fcc; }
+
+    /* Avatar picker */
+    .avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 1rem 0; }
+    .avatar-card { border: 1.5px solid #ddd; border-radius: 10px; padding: 12px 8px; text-align: center; cursor: pointer; transition: all .15s; background: #fff; }
+    .avatar-card:hover { background: #f5f5f5; }
+    .avatar-card.selected-p1 { border: 2.5px solid #534AB7; background: #EEEDFE; }
+    .avatar-card.selected-p2 { border: 2.5px solid #0F6E56; background: #E1F5EE; }
+    .avatar-card.disabled { opacity: 0.35; pointer-events: none; }
+    .av-icon { font-size: 28px; margin-bottom: 4px; }
+    .av-name { font-size: 11px; font-weight: 600; color: #333; }
+    .player-tag { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 8px; margin-right: 6px; }
+    .p1-tag { background: #EEEDFE; color: #3C3489; }
+    .p2-tag { background: #E1F5EE; color: #085041; }
+
+    /* Race layout */
+    .race-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .player-col { border: 1.5px solid #ddd; border-radius: 12px; padding: 14px; background: #fff; }
+    .player-col.p1-col { border-color: #534AB7; }
+    .player-col.p2-col { border-color: #0F6E56; }
+    .col-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .col-avatar { font-size: 24px; }
+    .col-name { font-size: 14px; font-weight: 700; }
+    .col-name.p1 { color: #3C3489; }
+    .col-name.p2 { color: #085041; }
+    .clue-box { background: #f8f8f8; border: 1px solid #eee; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; font-size: 13px; color: #333; line-height: 1.65; font-style: italic; min-height: 90px; }
+    .ans-btn { display: block; width: 100%; padding: 9px 12px; border: 1.5px solid #ddd; border-radius: 7px; background: #fff; color: #333; font-size: 13px; cursor: pointer; text-align: left; margin-bottom: 7px; transition: all .15s; }
+    .ans-btn:hover:not(:disabled) { background: #f5f5f5; }
+    .ans-btn.correct { background: #e6f9f0; border-color: #2e9e68; color: #1a6b45; font-weight: 600; }
+    .ans-btn.wrong { background: #fdecea; border-color: #d94040; color: #a52828; }
+    .ans-btn:disabled { cursor: default; }
+    .progress-dots { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .dot { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid #ccc; background: #eee; transition: all .3s; }
+    .dot.done-p1 { background: #534AB7; border-color: #534AB7; }
+    .dot.done-p2 { background: #0F6E56; border-color: #0F6E56; }
+    .feedback-sm { font-size: 12px; font-weight: 600; padding: 7px 10px; border-radius: 6px; margin-bottom: 8px; }
+    .feedback-sm.correct { background: #e6f9f0; color: #1a6b45; }
+    .feedback-sm.wrong { background: #fdecea; color: #a52828; }
+    .next-btn-sm { width: 100%; padding: 9px; border: 1.5px solid #3b5fe2; border-radius: 7px; background: #3b5fe2; color: #fff; font-size: 13px; cursor: pointer; margin-top: 4px; font-weight: 600; }
+    .next-btn-sm:hover { background: #2d4fcc; }
+    .escaped-overlay { text-align: center; padding: 1.5rem 0; }
+
+    /* End screen */
+    .end-card { background: #fff; border: 1.5px solid #ddd; border-radius: 12px; padding: 1.5rem; text-align: center; max-width: 360px; margin: 1rem auto; }
+
+    /* Title screen */
+    .title-center { text-align: center; padding: 3rem 0 1.5rem; }
+    .big-icon { font-size: 56px; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+<!-- TITLE SCREEN -->
+<div id="screen-title" class="screen active">
+  <div class="title-center">
+    <div class="big-icon">🔐</div>
+    <h1>Jobs Escape Room</h1>
+    <p class="subtitle" style="margin-bottom:6px">Two players &bull; Race mode &bull; First to escape wins!</p>
+    <p style="max-width:320px;margin:0 auto 1.5rem;color:#666">Both players answer at the same time. First to correctly answer all 8 clues escapes!</p>
+    <button class="btn btn-primary" onclick="showScreen('screen-pick')">Start Game</button>
+  </div>
+</div>
+
+<!-- CHARACTER PICK SCREEN -->
+<div id="screen-pick" class="screen">
+  <h2>Choose your characters</h2>
+  <p class="subtitle">Player 1 picks first, then Player 2.</p>
+  <div style="margin-bottom:12px">
+    <span class="player-tag p1-tag" id="pick-status-p1">Player 1 — picking...</span>
+    <span class="player-tag p2-tag" id="pick-status-p2">Player 2 — waiting</span>
+  </div>
+  <div class="avatar-grid" id="pick-grid"></div>
+  <button class="btn btn-primary" id="start-race-btn" onclick="startRace()" disabled>Start the Race! →</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="screen-game" class="screen">
+  <p style="font-size:12px;color:#888;margin-bottom:10px;text-align:center">Race to escape! Answer all 8 clues correctly. Wrong answers still move you forward.</p>
+  <div class="race-wrap">
+    <div class="player-col p1-col" id="col-p1">
+      <div class="col-header">
+        <span class="col-avatar" id="av-p1"></span>
+        <span class="col-name p1" id="name-p1">Player 1</span>
+      </div>
+      <div class="progress-dots" id="dots-p1"></div>
+      <div id="panel-p1"></div>
+    </div>
+    <div class="player-col p2-col" id="col-p2">
+      <div class="col-header">
+        <span class="col-avatar" id="av-p2"></span>
+        <span class="col-name p2" id="name-p2">Player 2</span>
+      </div>
+      <div class="progress-dots" id="dots-p2"></div>
+      <div id="panel-p2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- END SCREEN -->
+<div id="screen-end" class="screen">
+  <div style="text-align:center;padding:2rem 0">
+    <div style="font-size:52px;margin-bottom:8px" id="end-icon">🏆</div>
+    <h1 id="end-title">Player 1 Escaped!</h1>
+    <p class="subtitle" id="end-subtitle"></p>
+    <div class="end-card">
+      <div style="display:flex;justify-content:center;gap:2.5rem;margin-bottom:1rem">
+        <div style="text-align:center">
+          <div style="font-size:40px" id="end-av1"></div>
+          <div style="font-size:13px;color:#3C3489;font-weight:700;margin-top:4px">Player 1</div>
+          <div style="font-size:12px;color:#888" id="end-stat1"></div>
+        </div>
+        <div style="font-size:22px;align-self:center;color:#bbb">vs</div>
+        <div style="text-align:center">
+          <div style="font-size:40px" id="end-av2"></div>
+          <div style="font-size:13px;color:#085041;font-weight:700;margin-top:4px">Player 2</div>
+          <div style="font-size:12px;color:#888" id="end-stat2"></div>
+        </div>
+      </div>
+      <p style="font-size:15px;font-weight:700;color:#222;margin-bottom:0" id="end-msg"></p>
+    </div>
+    <button class="btn btn-primary" onclick="restartGame()">Play Again</button>
+  </div>
+</div>
+
+<script>
+  const avatars = [
+    {icon:'🧑‍🚀',name:'Astronaut'},{icon:'🧙',name:'Wizard'},
+    {icon:'🦸',name:'Hero'},{icon:'🕵️',name:'Detective'},
+    {icon:'🧑‍🍳',name:'Chef'},{icon:'🧑‍🎨',name:'Artist'},
+    {icon:'🧑‍💻',name:'Hacker'},{icon:'🤠',name:'Cowboy'}
+  ];
+
+  const allQuestions = [
+    { clue:"I wear a big helmet and heavy protective clothing. When a building is on fire, I rush in to save people. I carry a hose and sometimes an axe. My job is very dangerous but I love helping others stay safe.", answer:"Firefighter", choices:["Firefighter","Police Officer","Engineer","Scientist"] },
+    { clue:"I wear a uniform and a badge. I patrol the streets to keep people safe. I can arrest someone who breaks the law. People call me when there is an emergency or a crime.", answer:"Police Officer", choices:["Reporter","Police Officer","Singer","Firefighter"] },
+    { clue:"I play a sport with a bat and a ball. I run around bases and try to score points for my team. Games are played in a large stadium and fans cheer loudly. I practice a lot to throw, catch, and hit well.", answer:"Baseball Player", choices:["Baseball Player","Singer","YouTuber","Engineer"] },
+    { clue:"I write stories and news for TV, newspaper, or the internet. I interview people and ask lots of questions. I go where important things happen to tell the world what is going on. My job is to share the truth.", answer:"Reporter", choices:["Reporter","Scientist","Police Officer","YouTuber"] },
+    { clue:"I work in a lab and do experiments. I ask questions about the world and try to find answers. I use microscopes, chemicals, and data. My discoveries can help make new medicine or explain how nature works.", answer:"Scientist", choices:["Engineer","Scientist","Reporter","Baseball Player"] },
+    { clue:"I perform on stage and record music. People listen to my songs on the radio and on their phones. I use my voice as my instrument. Sometimes I go on tour and perform in big concerts around the world.", answer:"Singer", choices:["Singer","Firefighter","YouTuber","Scientist"] },
+    { clue:"I make videos and post them online for people to watch. I film myself talking, playing games, cooking, or doing challenges. I edit the videos on my computer. I earn money when many people subscribe to my channel.", answer:"YouTuber", choices:["Reporter","Singer","YouTuber","Police Officer"] },
+    { clue:"I use math and science to design and build things — like bridges, machines, phones, or buildings. I solve problems and make sure everything works safely. I often draw detailed plans before building anything.", answer:"Engineer", choices:["Engineer","Scientist","Baseball Player","Firefighter"] }
+  ];
+
+  let p1Av = null, p2Av = null, pickPhase = 1;
+  let p1Q = [], p2Q = [], p1Idx = 0, p2Idx = 0;
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function shuffle(arr) { return arr.slice().sort(() => Math.random() - 0.5); }
+
+  function buildPickGrid() {
+    const grid = document.getElementById('pick-grid');
+    grid.innerHTML = '';
+    avatars.forEach((av, i) => {
+      const d = document.createElement('div');
+      d.className = 'avatar-card';
+      d.id = 'pav-' + i;
+      d.innerHTML = '<div class="av-icon">' + av.icon + '</div><div class="av-name">' + av.name + '</div>';
+      d.onclick = () => pickAvatar(i);
+      grid.appendChild(d);
+    });
+  }
+
+  function pickAvatar(i) {
+    if (pickPhase === 1) {
+      p1Av = i;
+      document.querySelectorAll('.avatar-card').forEach(c => c.classList.remove('selected-p1'));
+      document.getElementById('pav-' + i).classList.add('selected-p1');
+      document.getElementById('pick-status-p1').textContent = 'Player 1 — ' + avatars[i].name;
+      document.getElementById('pick-status-p2').textContent = 'Player 2 — picking...';
+      pickPhase = 2;
+    } else if (pickPhase === 2) {
+      if (i === p1Av) return;
+      p2Av = i;
+      document.getElementById('pav-' + i).classList.add('selected-p2');
+      document.getElementById('pick-status-p2').textContent = 'Player 2 — ' + avatars[i].name;
+      document.getElementById('start-race-btn').disabled = false;
+      pickPhase = 3;
+    }
+  }
+
+  function startRace() {
+    p1Idx = 0; p2Idx = 0;
+    p1Q = shuffle(allQuestions);
+    p2Q = shuffle(allQuestions);
+    document.getElementById('av-p1').textContent = avatars[p1Av].icon;
+    document.getElementById('av-p2').textContent = avatars[p2Av].icon;
+    document.getElementById('name-p1').textContent = avatars[p1Av].name;
+    document.getElementById('name-p2').textContent = avatars[p2Av].name;
+    buildDots(1); buildDots(2);
+    showScreen('screen-game');
+    renderPanel(1); renderPanel(2);
+  }
+
+  function buildDots(player) {
+    const wrap = document.getElementById('dots-p' + player);
+    wrap.innerHTML = '';
+    for (let i = 0; i < 8; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot';
+      d.id = 'dot-p' + player + '-' + i;
+      wrap.appendChild(d);
+    }
+  }
+
+  function updateDot(player, idx) {
+    const d = document.getElementById('dot-p' + player + '-' + idx);
+    if (d) d.className = 'dot done-p' + player;
+  }
+
+  function renderPanel(player) {
+    const panel = document.getElementById('panel-p' + player);
+    const q = player === 1 ? p1Q[p1Idx] : p2Q[p2Idx];
+    const idx = player === 1 ? p1Idx : p2Idx;
+    if (!q) return;
+    const shuffled = shuffle(q.choices);
+    const isLast = idx === 7;
+    panel.innerHTML =
+      '<div style="font-size:11px;color:#999;margin-bottom:5px">Clue ' + (idx+1) + ' of 8</div>' +
+      '<div class="clue-box">' + q.clue + '</div>' +
+      shuffled.map(c =>
+        '<button class="ans-btn" onclick="checkAns(' + player + ', \'' + c + '\', \'' + q.answer + '\', this)">' + c + '</button>'
+      ).join('');
+  }
+
+  function checkAns(player, choice, correct, btn) {
+    const panel = document.getElementById('panel-p' + player);
+    panel.querySelectorAll('.ans-btn').forEach(b => { b.disabled = true; b.onclick = null; });
+    const idx = player === 1 ? p1Idx : p2Idx;
+    const fb = document.createElement('div');
+    const isCorrect = choice === correct;
+    if (isCorrect) {
+      btn.classList.add('correct');
+      fb.className = 'feedback-sm correct';
+      fb.textContent = 'Correct! Well done!';
+      updateDot(player, idx);
+    } else {
+      btn.classList.add('wrong');
+      panel.querySelectorAll('.ans-btn').forEach(b => { if (b.textContent === correct) b.classList.add('correct'); });
+      fb.className = 'feedback-sm wrong';
+      fb.textContent = 'Wrong! Answer: ' + correct;
+    }
+    panel.appendChild(fb);
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'next-btn-sm';
+    const isLast = idx === 7;
+    nextBtn.textContent = isLast ? '🔓 Escape!' : 'Next clue →';
+    nextBtn.onclick = () => advance(player, isCorrect);
+    panel.appendChild(nextBtn);
+  }
+
+  function advance(player, wasCorrect) {
+    if (player === 1) { p1Idx++; if (p1Idx >= 8) { escaped(1); return; } renderPanel(1); }
+    else { p2Idx++; if (p2Idx >= 8) { escaped(2); return; } renderPanel(2); }
+  }
+
+  function escaped(winner) {
+    const loser = winner === 1 ? 2 : 1;
+    const wAvatar = winner === 1 ? p1Av : p2Av;
+    document.getElementById('col-p' + winner).innerHTML =
+      '<div class="escaped-overlay">' +
+      '<div style="font-size:40px;margin-bottom:8px">🎉</div>' +
+      '<div style="font-size:40px;margin-bottom:10px">' + avatars[wAvatar].icon + '</div>' +
+      '<div style="font-size:16px;font-weight:700;color:' + (winner===1?'#3C3489':'#085041') + '">Player ' + winner + ' escaped!</div>' +
+      '<div style="font-size:13px;color:#888;margin-top:6px">Waiting for Player ' + loser + '...</div>' +
+      '</div>';
+    setTimeout(() => showEndScreen(winner), 1200);
+  }
+
+  function showEndScreen(winner) {
+    const loser = winner === 1 ? 2 : 1;
+    const wAv = winner === 1 ? p1Av : p2Av;
+    const lAv = loser === 1 ? p1Av : p2Av;
+    document.getElementById('end-title').textContent = 'Player ' + winner + ' escaped first!';
+    document.getElementById('end-subtitle').textContent = avatars[wAv].name + ' unlocked the door!';
+    document.getElementById('end-av1').textContent = avatars[p1Av].icon;
+    document.getElementById('end-av2').textContent = avatars[p2Av].icon;
+    document.getElementById('end-stat1').textContent = p1Idx >= 8 ? '🔓 Escaped!' : p1Idx + '/8 done';
+    document.getElementById('end-stat2').textContent = p2Idx >= 8 ? '🔓 Escaped!' : p2Idx + '/8 done';
+    document.getElementById('end-msg').textContent = avatars[wAv].name + ' beat ' + avatars[lAv].name + ' to the exit!';
+    showScreen('screen-end');
+  }
+
+  function restartGame() {
+    p1Av = null; p2Av = null; pickPhase = 1;
+    document.getElementById('pick-status-p1').textContent = 'Player 1 — picking...';
+    document.getElementById('pick-status-p2').textContent = 'Player 2 — waiting';
+    document.getElementById('start-race-btn').disabled = true;
+    buildPickGrid();
+    showScreen('screen-pick');
+  }
+
+  buildPickGrid();
+</script>
+</body>
+</html>
