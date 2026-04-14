@@ -18,13 +18,16 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
     body { 
-      font-family: 'Courier New', Courier, monospace; /* Pixel-like fallback */
+      font-family: 'Courier New', Courier, monospace; 
       background: #4a4a4a url('https://www.transparenttextures.com/patterns/dark-matter.png');
       color: #fff; 
       min-height: 100vh; 
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
-    .screen { display: none; padding: 1.5rem 1rem; max-width: 850px; margin: 0 auto; }
+    .screen { display: none; padding: 1.5rem 1rem; width: 100%; max-width: 850px; margin: 0 auto; }
     .screen.active { display: block; }
 
     /* Minecraft UI Box Style */
@@ -32,20 +35,19 @@
       background: var(--mc-gui);
       border: 4px solid #000;
       box-shadow: inset -4px -4px var(--mc-border-dark), inset 4px 4px var(--mc-border-light);
-      padding: 20px;
+      padding: 24px;
       color: #333;
     }
 
-    h1, h2 { text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px #000; color: #fff; margin-bottom: 15px; }
-    #screen-title h1 { font-size: 40px; }
-
-    p { font-size: 14px; margin-bottom: 10px; color: #fff; text-shadow: 1px 1px #000; }
-    .subtitle { color: #ddd; }
+    h1, h2 { text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px #000; color: #fff; margin-bottom: 15px; text-align: center; }
+    
+    p { font-size: 14px; margin-bottom: 10px; color: #fff; text-shadow: 1px 1px #000; text-align: center; }
 
     /* Blocky Buttons */
     .btn {
-      display: inline-block;
-      padding: 12px 20px;
+      display: block;
+      margin: 10px auto;
+      padding: 12px 24px;
       background: #666;
       border: 3px solid #000;
       box-shadow: inset -3px -3px #333, inset 3px 3px #999;
@@ -55,86 +57,79 @@
       text-transform: uppercase;
       font-weight: bold;
     }
-    .btn:hover { background: var(--mc-btn-hover); box-shadow: inset -3px -3px #4e6a1f, inset 3px 3px #a5d64e; }
+    .btn:hover:not(:disabled) { background: var(--mc-btn-hover); box-shadow: inset -3px -3px #4e6a1f, inset 3px 3px #a5d64e; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* Avatar picker */
-    .avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 1rem 0; }
+    .avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 1.5rem 0; }
     .avatar-card { 
       background: #8b8b8b; 
       border: 3px solid #000; 
       box-shadow: inset -3px -3px #555, inset 3px 3px #bbb;
-      padding: 10px; 
+      padding: 12px; 
       text-align: center; 
       cursor: pointer; 
     }
     .avatar-card.selected-p1 { background: #3b5fe2; box-shadow: inset -3px -3px #1a2d8a, inset 3px 3px #839ef5; }
     .avatar-card.selected-p2 { background: var(--mc-green); box-shadow: inset -3px -3px #2d5015, inset 3px 3px #a5d64e; }
-    .avatar-card.disabled { opacity: 0.3; }
 
-    /* Game Layout */
+    /* Race layout */
     .race-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .player-col { 
       background: var(--mc-gui); 
       border: 4px solid #000; 
       padding: 15px; 
       box-shadow: inset -4px -4px #8b8b8b, inset 4px 4px #fff;
+      color: #333;
     }
     
     .clue-box { 
       background: #333; 
       border: 3px solid #000; 
-      color: #00ff00; /* Terminal/Commando look */
+      color: #00ff00; 
       padding: 12px; 
       margin-bottom: 10px; 
       font-size: 13px; 
-      min-height: 100px;
+      min-height: 110px;
+      line-height: 1.4;
     }
 
     .ans-btn { 
       display: block; width: 100%; padding: 10px; 
       background: #aaa; border: 2px solid #000; 
       box-shadow: inset -2px -2px #555, inset 2px 2px #eee;
-      margin-bottom: 5px; cursor: pointer; text-align: left;
+      margin-bottom: 6px; cursor: pointer; text-align: left;
+      font-family: inherit; font-weight: bold;
     }
-    .ans-btn.correct { background: #55ff55 !important; color: #000; font-weight: bold; }
+    .ans-btn.correct { background: #55ff55 !important; color: #000; }
     .ans-btn.wrong { background: #ff5555 !important; color: #fff; }
 
-    /* Progress Dots as Items */
-    .progress-dots { display: flex; gap: 4px; margin-bottom: 10px; }
-    .dot { 
-      width: 20px; height: 20px; 
-      background: #333; border: 2px solid #000; 
-    }
+    .progress-dots { display: flex; gap: 4px; margin-bottom: 12px; justify-content: center; }
+    .dot { width: 18px; height: 18px; background: #333; border: 2px solid #000; }
     .dot.done-p1 { background: #3b5fe2; }
     .dot.done-p2 { background: var(--mc-green); }
 
-    .feedback-sm { font-weight: bold; margin: 10px 0; font-size: 12px; text-transform: uppercase; }
+    .feedback-sm { font-weight: bold; margin: 8px 0; font-size: 11px; text-transform: uppercase; text-align: center; }
     .feedback-sm.correct { color: #2e7d32; }
     .feedback-sm.wrong { color: #c62828; }
 
-    .title-center { text-align: center; padding-top: 50px; }
-    .big-icon { font-size: 80px; filter: drop-shadow(4px 4px 0px #000); }
+    .big-icon { font-size: 80px; filter: drop-shadow(4px 4px 0px #000); margin-bottom: 20px; text-align: center; }
   </style>
 </head>
 <body>
 
 <div id="screen-title" class="screen active">
-  <div class="title-center">
-    <div class="big-icon">⛏️</div>
-    <h1>Crafting Careers</h1>
-    <p class="subtitle">Two Players • Survival Race • Escape the Dungeon!</p>
-    <br>
-    <button class="btn" onclick="showScreen('screen-pick')">Enter World</button>
-  </div>
+  <div class="big-icon">⛏️</div>
+  <h1>Crafting Careers</h1>
+  <p>Two Players • Survival Race • Escape the Dungeon!</p>
+  <button class="btn" onclick="showScreen('screen-pick')">Enter World</button>
 </div>
 
 <div id="screen-pick" class="screen">
   <div class="mc-container">
     <h2>Select Skin</h2>
-    <p style="color:#333; text-shadow:none;">Player 1 (Blue) then Player 2 (Green)</p>
-    <div id="pick-status" style="margin-bottom:10px; font-weight:bold;">
-      <span id="pick-status-p1">P1: Picking...</span> | <span id="pick-status-p2">P2: Waiting</span>
+    <div id="pick-status" style="text-align:center; margin-bottom:10px; font-weight:bold; font-size: 12px;">
+      <span id="pick-status-p1" style="color:#3b5fe2">P1: Picking...</span> | <span id="pick-status-p2">P2: Waiting</span>
     </div>
     <div class="avatar-grid" id="pick-grid"></div>
     <button class="btn" id="start-race-btn" onclick="startRace()" disabled>Start Game</button>
@@ -144,18 +139,18 @@
 <div id="screen-game" class="screen">
   <div class="race-wrap">
     <div class="player-col" id="col-p1">
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px;">
         <span id="av-p1" style="font-size:30px"></span>
-        <span id="name-p1" style="font-weight:bold; color:#1a2d8a"></span>
+        <span id="name-p1" style="font-weight:bold; color:#1a2d8a; font-size:14px;"></span>
       </div>
       <div class="progress-dots" id="dots-p1"></div>
       <div id="panel-p1"></div>
     </div>
 
     <div class="player-col" id="col-p2">
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px;">
         <span id="av-p2" style="font-size:30px"></span>
-        <span id="name-p2" style="font-weight:bold; color:#2d5015"></span>
+        <span id="name-p2" style="font-weight:bold; color:#2d5015; font-size:14px;"></span>
       </div>
       <div class="progress-dots" id="dots-p2"></div>
       <div id="panel-p2"></div>
@@ -173,7 +168,51 @@
 </div>
 
 <script>
-  // Avatars updated to feel more like Minecraft mobs/characters
+  // --- SOUND ENGINE ---
+  let audioCtx;
+  function playSound(type) {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+
+    if (type === 'click') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(10, now + 0.1);
+      gain.gain.setValueAtTime(0.1, now);
+      osc.start(); osc.stop(now + 0.1);
+    } 
+    else if (type === 'correct') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.start(); osc.stop(now + 0.3);
+    } 
+    else if (type === 'wrong') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.linearRampToValueAtTime(70, now + 0.2);
+      gain.gain.setValueAtTime(0.1, now);
+      osc.start(); osc.stop(now + 0.2);
+    } 
+    else if (type === 'win') {
+      [523, 659, 784, 1046].forEach((f, i) => {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.connect(g); g.connect(audioCtx.destination);
+        o.frequency.value = f;
+        g.gain.setValueAtTime(0.1, now + (i * 0.1));
+        g.gain.exponentialRampToValueAtTime(0.01, now + (i * 0.1) + 0.4);
+        o.start(now + (i * 0.1)); o.stop(now + (i * 0.1) + 0.4);
+      });
+    }
+  }
+
+  // --- GAME LOGIC ---
   const avatars = [
     {icon:'🧟',name:'Zombie'},{icon:'💀',name:'Skeleton'},
     {icon:'🐷',name:'Pigman'},{icon:'🌲',name:'Steve'},
@@ -182,20 +221,21 @@
   ];
 
   const allQuestions = [
-    { clue:"I wear heavy armor and enter burning village houses to save villagers. I use a bucket of water and a diamond axe. I keep the nether fires from spreading.", answer:"Firefighter", choices:["Firefighter","Police Officer","Engineer","Scientist"] },
-    { clue:"I patrol the server to keep players safe. I have a badge and a uniform. If someone griefs or breaks the rules, I am the one who stops them.", answer:"Police Officer", choices:["Reporter","Police Officer","Singer","Firefighter"] },
-    { clue:"I play a game with a leather ball in a massive obsidian stadium. Millions of fans watch my streams while I try to score points for my team.", answer:"Baseball Player", choices:["Baseball Player","Singer","YouTuber","Engineer"] },
-    { clue:"I travel to the Far Lands to report on what is happening in the world. I interview the top crafters and write stories for the daily scroll.", answer:"Reporter", choices:["Reporter","Scientist","Police Officer","YouTuber"] },
-    { clue:"I spend my days at a brewing stand with glass bottles and redstone. I do experiments to find out how potions work and discover new crafting recipes.", answer:"Scientist", choices:["Engineer","Scientist","Reporter","Baseball Player"] },
-    { clue:"I perform on top of note blocks and use my voice to entertain the server. Players come from thousands of blocks away to hear my songs.", answer:"Singer", choices:["Singer","Firefighter","YouTuber","Scientist"] },
-    { clue:"I record my screen while I build epic bases and fight creepers. I post the footage for people to watch. If I get enough subscribers, I get diamond play buttons.", answer:"YouTuber", choices:["Reporter","Singer","YouTuber","Police Officer"] },
-    { clue:"I use redstone and blueprints to build massive bridges and automatic iron farms. I make sure the machinery doesn't jam and everything is built safely.", answer:"Engineer", choices:["Engineer","Scientist","Baseball Player","Firefighter"] }
+    { clue:"I wear heavy armor and enter burning village houses to save villagers. I use a bucket of water and a diamond axe.", answer:"Firefighter", choices:["Firefighter","Police Officer","Engineer","Scientist"] },
+    { clue:"I patrol the server to keep players safe. I have a badge and a uniform. If someone griefs, I stop them.", answer:"Police Officer", choices:["Reporter","Police Officer","Singer","Firefighter"] },
+    { clue:"I play a game with a leather ball in a massive obsidian stadium. Millions of fans watch my streams.", answer:"Baseball Player", choices:["Baseball Player","Singer","YouTuber","Engineer"] },
+    { clue:"I travel to the Far Lands to report on what is happening. I interview the top crafters and write for the daily scroll.", answer:"Reporter", choices:["Reporter","Scientist","Police Officer","YouTuber"] },
+    { clue:"I spend my days at a brewing stand with glass bottles. I do experiments to find out how potions work.", answer:"Scientist", choices:["Engineer","Scientist","Reporter","Baseball Player"] },
+    { clue:"I perform on top of note blocks and use my voice to entertain the server. Players come from far away to hear me.", answer:"Singer", choices:["Singer","Firefighter","YouTuber","Scientist"] },
+    { clue:"I record my screen while I build epic bases. I post the footage for people to watch. Subscribe for diamonds!", answer:"YouTuber", choices:["Reporter","Singer","YouTuber","Police Officer"] },
+    { clue:"I use redstone and blueprints to build massive bridges and automatic iron farms. I solve complex machinery problems.", answer:"Engineer", choices:["Engineer","Scientist","Baseball Player","Firefighter"] }
   ];
 
   let p1Av = null, p2Av = null, pickPhase = 1;
   let p1Q = [], p2Q = [], p1Idx = 0, p2Idx = 0;
 
   function showScreen(id) {
+    playSound('click');
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
   }
@@ -209,18 +249,21 @@
       const d = document.createElement('div');
       d.className = 'avatar-card';
       d.id = 'pav-' + i;
-      d.innerHTML = '<div style="font-size:32px">' + av.icon + '</div><div style="font-size:10px; font-weight:bold; margin-top:5px;">' + av.name.toUpperCase() + '</div>';
+      d.innerHTML = `<div style="font-size:32px">${av.icon}</div><div style="font-size:10px; font-weight:bold; margin-top:5px;">${av.name.toUpperCase()}</div>`;
       d.onclick = () => pickAvatar(i);
       grid.appendChild(d);
     });
   }
 
   function pickAvatar(i) {
+    playSound('click');
     if (pickPhase === 1) {
       p1Av = i;
       document.querySelectorAll('.avatar-card').forEach(c => c.classList.remove('selected-p1'));
       document.getElementById('pav-' + i).classList.add('selected-p1');
       document.getElementById('pick-status-p1').textContent = 'P1: ' + avatars[i].name;
+      document.getElementById('pick-status-p2').style.color = '#5aa32a';
+      document.getElementById('pick-status-p2').textContent = 'P2: Picking...';
       pickPhase = 2;
     } else if (pickPhase === 2) {
       if (i === p1Av) return;
@@ -233,6 +276,7 @@
   }
 
   function startRace() {
+    playSound('win');
     p1Idx = 0; p2Idx = 0;
     p1Q = shuffle(allQuestions);
     p2Q = shuffle(allQuestions);
@@ -256,76 +300,65 @@
     }
   }
 
-  function updateDot(player, idx) {
-    const d = document.getElementById('dot-p' + player + '-' + idx);
-    if (d) d.className = 'dot done-p' + player;
-  }
-
   function renderPanel(player) {
     const panel = document.getElementById('panel-p' + player);
     const q = player === 1 ? p1Q[p1Idx] : p2Q[p2Idx];
     const idx = player === 1 ? p1Idx : p2Idx;
     if (!q) return;
     const shuffled = shuffle(q.choices);
-    panel.innerHTML =
-      '<div style="font-size:10px; font-weight:bold; color:#555; margin-bottom:5px">QUEST ' + (idx+1) + '/8</div>' +
-      '<div class="clue-box">' + q.clue + '</div>' +
-      shuffled.map(c =>
-        '<button class="ans-btn" onclick="checkAns(' + player + ', \'' + c + '\', \'' + q.answer + '\', this)">' + c + '</button>'
-      ).join('');
+    panel.innerHTML = `
+      <div style="font-size:10px; font-weight:bold; color:#555; margin-bottom:5px">QUEST ${idx+1}/8</div>
+      <div class="clue-box">${q.clue}</div>
+      ${shuffled.map(c => `<button class="ans-btn" onclick="checkAns(${player}, '${c}', '${q.answer}', this)">${c}</button>`).join('')}
+    `;
   }
 
   function checkAns(player, choice, correct, btn) {
     const panel = document.getElementById('panel-p' + player);
-    panel.querySelectorAll('.ans-btn').forEach(b => { b.disabled = true; });
+    panel.querySelectorAll('.ans-btn').forEach(b => b.disabled = true);
     const idx = player === 1 ? p1Idx : p2Idx;
     const fb = document.createElement('div');
-    const isCorrect = choice === correct;
+    const isCorrect = (choice === correct);
+    
     if (isCorrect) {
+      playSound('correct');
       btn.classList.add('correct');
       fb.className = 'feedback-sm correct';
       fb.textContent = '★ ADVANCING...';
-      updateDot(player, idx);
+      document.getElementById('dot-p' + player + '-' + idx).className = 'dot done-p' + player;
     } else {
+      playSound('wrong');
       btn.classList.add('wrong');
       panel.querySelectorAll('.ans-btn').forEach(b => { if (b.textContent === correct) b.classList.add('correct'); });
       fb.className = 'feedback-sm wrong';
       fb.textContent = '✖ FAILED! Correct: ' + correct;
     }
+    
     panel.appendChild(fb);
     const nextBtn = document.createElement('button');
     nextBtn.className = 'btn';
     nextBtn.style.width = "100%";
-    const isLast = idx === 7;
-    nextBtn.textContent = isLast ? 'Finish Race' : 'Next Quest';
-    nextBtn.onclick = () => advance(player, isCorrect);
+    nextBtn.textContent = (idx === 7) ? 'Finish Race' : 'Next Quest';
+    nextBtn.onclick = () => { playSound('click'); advance(player); };
     panel.appendChild(nextBtn);
   }
 
-  function advance(player, wasCorrect) {
+  function advance(player) {
     if (player === 1) { p1Idx++; if (p1Idx >= 8) { escaped(1); return; } renderPanel(1); }
     else { p2Idx++; if (p2Idx >= 8) { escaped(2); return; } renderPanel(2); }
   }
 
   function escaped(winner) {
-    setTimeout(() => showEndScreen(winner), 500);
-  }
-
-  function showEndScreen(winner) {
+    playSound('win');
     const wAv = winner === 1 ? p1Av : p2Av;
-    const lAv = (winner === 1 ? p2Av : p1Av);
+    const lAv = winner === 1 ? p2Av : p1Av;
     document.getElementById('end-title').textContent = 'PLAYER ' + winner + ' WINS!';
     document.getElementById('end-msg').textContent = avatars[wAv].name + " out-crafted " + avatars[lAv].name + "!";
     showScreen('screen-end');
   }
 
   function restartGame() {
-    p1Av = null; p2Av = null; pickPhase = 1;
-    document.getElementById('pick-status-p1').textContent = 'P1: Picking...';
-    document.getElementById('pick-status-p2').textContent = 'P2: Waiting';
-    document.getElementById('start-race-btn').disabled = true;
-    buildPickGrid();
-    showScreen('screen-pick');
+    location.reload(); // Simplest way to reset all states
   }
 
   buildPickGrid();
