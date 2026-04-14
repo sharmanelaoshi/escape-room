@@ -1,0 +1,215 @@
+Pokémon Preposition Escape Room (with Timer)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Preposition Escape</title>
+    <style>
+        body {
+            font-family: 'Chalkboard SE', 'Comic Sans MS', cursive;
+            background-color: #e0f2f1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #game-box {
+            background: white;
+            border: 6px solid #ffcb05; /* Pokémon Yellow */
+            border-radius: 30px;
+            padding: 20px;
+            width: 95%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        /* TIMER STYLE */
+        #timer-container {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ff0000;
+            margin-bottom: 10px;
+            background: #ffebee;
+            padding: 5px;
+            border-radius: 10px;
+        }
+
+        #stage {
+            width: 100%;
+            height: 220px;
+            background-color: #f0faff;
+            border-radius: 20px;
+            position: relative;
+            margin-bottom: 20px;
+            border: 2px solid #a2d2ff;
+            overflow: hidden;
+        }
+
+        .furniture { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); }
+        .desk { width: 150px; height: 70px; background: #8d6e63; border-radius: 5px; border-bottom: 30px solid #5d4037; }
+        .box { width: 110px; height: 90px; background: #d7ccc8; border: 4px solid #a1887f; border-top: none; }
+        .chair { width: 90px; height: 60px; background: #ffc2d1; border-radius: 5px; border-bottom: 40px solid #ff85a1; }
+
+        #toy-container {
+            position: absolute;
+            width: 100%;
+            transition: all 0.5s ease;
+            display: flex;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .pokemon-img { width: 100px; height: 100px; }
+
+        /* Position helpers */
+        .pos-on { bottom: 100px; }
+        .pos-in { bottom: 40px; z-index: 1; opacity: 0.9; }
+        .pos-under { bottom: -10px; }
+
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        
+        button {
+            background-color: #3b4cca; /* Pokémon Blue */
+            border: none;
+            padding: 15px 5px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-family: inherit;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+        }
+        button:hover { background-color: #2a3990; }
+
+        #feedback { height: 30px; margin-top: 10px; font-weight: bold; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="game-box">
+    <div id="start-screen">
+        <h1 style="color: #3b4cca;">⚡ Pokémon Escape! ⚡</h1>
+        <p>Catch all Pokémon before the time runs out!</p>
+        <button onclick="startGame()" style="width:100%">Start Mission! 🚀</button>
+    </div>
+
+    <div id="game-screen" class="hidden">
+        <div id="timer-container">⏳ Time Left: <span id="time">60</span>s</div>
+        
+        <div id="stage">
+            <div id="toy-container">
+                <img id="poke-sprite" class="pokemon-img" src="" alt="pokemon">
+            </div>
+            <div id="furniture-container"></div>
+        </div>
+        
+        <p id="question-label" style="font-weight:bold; color:#4a4a4a;">Where is the Pokémon?</p>
+        
+        <div class="options-grid">
+            <button onclick="check('on')">ON</button>
+            <button onclick="check('in')">IN</button>
+            <button onclick="check('under')">UNDER</button>
+        </div>
+        <div id="feedback"></div>
+    </div>
+
+    <div id="win-screen" class="hidden">
+        <h1 style="color: #4CAF50;">🏆 YOU ESCAPED! 🏆</h1>
+        <p>You caught them all in time!</p>
+        <button onclick="location.reload()" style="width:100%">Play Again 🔄</button>
+    </div>
+
+    <div id="lose-screen" class="hidden">
+        <h1 style="color: #f44336;">⏰ TIME IS UP!</h1>
+        <p>The Pokémon escaped! Try again?</p>
+        <button onclick="location.reload()" style="width:100%">Try Again 🔄</button>
+    </div>
+</div>
+
+<script>
+    const levels = [
+        { img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png", name: "Pikachu", furn: "box", pos: "in" },
+        { img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png", name: "Squirtle", furn: "desk", pos: "on" },
+        { img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png", name: "Bulbasaur", furn: "chair", pos: "under" },
+        { img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png", name: "Eevee", furn: "desk", pos: "in" },
+        { img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png", name: "Charmander", furn: "box", pos: "on" },
+        { img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png", name: "Mew", furn: "chair", pos: "on" },
+        { img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/52.png", name: "Meowth", furn: "desk", pos: "under" }
+    ];
+
+    let currentLevel = 0;
+    let timeLeft = 60;
+    let timerInterval;
+
+    function startGame() {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        startTimer();
+        showLevel();
+    }
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById('time').innerText = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                showLose();
+            }
+        }, 1000);
+    }
+
+    function showLevel() {
+        const data = levels[currentLevel];
+        const toyContainer = document.getElementById('toy-container');
+        const pokeSprite = document.getElementById('poke-sprite');
+        const furnContainer = document.getElementById('furniture-container');
+        const label = document.getElementById('question-label');
+
+        pokeSprite.src = data.img;
+        label.innerText = `Where is ${data.name}?`;
+        furnContainer.innerHTML = `<div class="furniture ${data.furn}"></div>`;
+
+        toyContainer.className = ""; 
+        toyContainer.classList.add('pos-' + data.pos);
+        document.getElementById('feedback').innerText = "";
+    }
+
+    function check(choice) {
+        if(choice === levels[currentLevel].pos) {
+            document.getElementById('feedback').style.color = "#4CAF50";
+            document.getElementById('feedback').innerText = "Gotcha! ✨";
+            setTimeout(() => {
+                currentLevel++;
+                if(currentLevel < levels.length) {
+                    showLevel();
+                } else {
+                    clearInterval(timerInterval);
+                    showWin();
+                }
+            }, 600);
+        } else {
+            document.getElementById('feedback').style.color = "#ff477e";
+            document.getElementById('feedback').innerText = "Oh no! Try again!";
+        }
+    }
+
+    function showWin() {
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('win-screen').classList.remove('hidden');
+    }
+
+    function showLose() {
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('lose-screen').classList.remove('hidden');
+    }
+</script>
+
+</body>
+</html>
