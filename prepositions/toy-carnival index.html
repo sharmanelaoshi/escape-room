@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎮 Toy Position Master</title>
+
+<style>
+body {
+    font-family: 'Comic Sans MS', cursive;
+    background: linear-gradient(135deg,#ffe5ec,#e0f7ff);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    margin:0;
+}
+
+/* FLASH */
+.flash-correct { background:#d4ffd6 !important; }
+.flash-wrong { background:#ffd6d6 !important; }
+
+#game {
+    background:white;
+    padding:20px;
+    border-radius:25px;
+    width:420px;
+    text-align:center;
+    box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+
+#stage {
+    height:220px;
+    background:#f0fbff;
+    border-radius:20px;
+    position:relative;
+    margin-bottom:15px;
+    border:3px solid #a2d2ff;
+}
+
+/* FURNITURE */
+.furniture {
+    position:absolute;
+    bottom:30px;
+    left:50%;
+    transform:translateX(-50%);
+}
+
+.desk { width:160px; height:70px; background:#8d6e63; border-bottom:30px solid #5d4037; }
+.box { width:120px; height:90px; background:#ddd; border:5px solid #999; }
+.chair { width:90px; height:60px; background:#ffc2d1; border-bottom:40px solid #ff85a1; }
+
+/* DROP ZONES */
+.zone {
+    position:absolute;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+}
+
+.zone.on { top:0; height:100px; }
+.zone.in { top:90px; height:80px; }
+.zone.under { bottom:0; height:60px; }
+
+/* TOY */
+#toy {
+    font-size:60px;
+    position:absolute;
+    top:10px;
+    left:10px;
+    cursor:grab;
+}
+
+/* BUTTON */
+button {
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:10px;
+    background:#ffc2d1;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+button:hover { background:#ffafcc; }
+
+#info {
+    font-size:14px;
+    margin-bottom:5px;
+}
+
+#feedback {
+    height:25px;
+    font-weight:bold;
+}
+
+.hidden { display:none; }
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+<div id="start">
+<h2>🧸 Drag & Learn!</h2>
+<p>Put the toy in the correct place!</p>
+<button onclick="startGame()">Start 🚀</button>
+</div>
+
+<div id="play" class="hidden">
+
+<div id="info">
+Score: <span id="score">0</span> | Time: <span id="time">30</span>
+</div>
+
+<div id="stage">
+<div id="toy" draggable="true">🧸</div>
+<div id="furniture"></div>
+
+<div class="zone on"></div>
+<div class="zone in"></div>
+<div class="zone under"></div>
+</div>
+
+<p id="question"><b>Put the toy ___ the box</b></p>
+
+<button onclick="checkAnswer()">Check ✅</button>
+
+<div id="feedback"></div>
+
+</div>
+
+<div id="end" class="hidden">
+<h2>🎉 Finished!</h2>
+<p>Your score: <span id="finalScore"></span></p>
+<button onclick="location.reload()">Play Again 🔄</button>
+</div>
+
+</div>
+
+<!-- SOUNDS -->
+<audio id="correct" src="https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3"></audio>
+<audio id="wrong" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-946.mp3"></audio>
+
+<script>
+
+const items = ["box","desk","chair"];
+const positions = ["on","in","under"];
+const toys = ["🧸","🤖","🚗","🪀","🪆"];
+
+let current = {};
+let score = 0;
+let time = 30;
+let chosen = "";
+
+function randomize(){
+return {
+toy: toys[Math.floor(Math.random()*toys.length)],
+item: items[Math.floor(Math.random()*items.length)],
+pos: positions[Math.floor(Math.random()*positions.length)]
+};
+}
+
+function startGame(){
+document.getElementById('start').classList.add('hidden');
+document.getElementById('play').classList.remove('hidden');
+
+nextRound();
+startTimer();
+}
+
+function nextRound(){
+current = randomize();
+chosen = "";
+
+document.getElementById('toy').innerText = current.toy;
+document.getElementById('furniture').innerHTML =
+`<div class="furniture ${current.item}"></div>`;
+
+document.getElementById('question').innerText =
+`Put the toy ${current.pos} the ${current.item}`;
+
+document.getElementById('feedback').innerText = "";
+}
+
+/* DRAG */
+const toy = document.getElementById("toy");
+
+toy.addEventListener("dragend", e=>{
+let y = e.clientY;
+let stage = document.getElementById("stage").getBoundingClientRect();
+
+let relativeY = y - stage.top;
+
+if(relativeY < 100){
+chosen = "on";
+toy.style.top = "20px";
+}
+else if(relativeY < 170){
+chosen = "in";
+toy.style.top = "100px";
+}
+else{
+chosen = "under";
+toy.style.top = "170px";
+}
+});
+
+function flash(type){
+document.body.classList.add(type);
+setTimeout(()=> document.body.classList.remove(type),300);
+}
+
+function checkAnswer(){
+if(!chosen){
+document.getElementById('feedback').innerText = "Drag the toy first!";
+return;
+}
+
+if(chosen === current.pos){
+document.getElementById('correct').play();
+flash('flash-correct');
+
+score++;
+document.getElementById('score').innerText = score;
+document.getElementById('feedback').innerText = "Correct! ✨";
+
+setTimeout(nextRound,700);
+
+}else{
+document.getElementById('wrong').play();
+flash('flash-wrong');
+document.getElementById('feedback').innerText = "Try again!";
+}
+}
+
+function startTimer(){
+let timer = setInterval(()=>{
+time--;
+document.getElementById('time').innerText = time;
+
+if(time <= 0){
+clearInterval(timer);
+endGame();
+}
+},1000);
+}
+
+function endGame(){
+document.getElementById('play').classList.add('hidden');
+document.getElementById('end').classList.remove('hidden');
+document.getElementById('finalScore').innerText = score;
+}
+
+</script>
+
+</body>
+</html>
